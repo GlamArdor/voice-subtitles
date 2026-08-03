@@ -1,0 +1,45 @@
+{
+	"schemaVersion": 1,
+	"id": "voice_subtitles",
+	"version": "${version}",
+	"name": "Voice Subtitles",
+	"description": "Live subtitles for Simple Voice Chat. Shows who is speaking and what they say, taking the roleplay name straight from the player list. Built so that deaf and hard-of-hearing players can follow proximity voice chat, and so that anyone playing without sound can too. Recognition is offline and client-side: no audio ever leaves your machine and nothing is uploaded anywhere. On first use the mod downloads a Vosk speech model (about 45 MB) from alphacephei.com; this can be turned off, and models can be installed by hand instead. A larger, markedly more accurate model is available for those who want it — it costs 1.8 GB of disk and about as much memory. Thanks to Contik for testing.",
+	"authors": [
+		"Glam_Ardor"
+	],
+	"contributors": [
+		"Contik"
+	],
+	"contact": {},
+	"license": "LGPL-3.0-or-later",
+	"icon": "assets/voice_subtitles/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.glamardor.voicesubtitles.VoiceSubtitlesClient"
+		],
+		"voicechat": [
+			"com.glamardor.voicesubtitles.VoicechatSubtitlePlugin"
+		],
+		"modmenu": [
+			"com.glamardor.voicesubtitles.config.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		{
+			"config": "voice_subtitles.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": ">=1.21.6 <1.21.9",
+		"java": ">=21",
+		"fabric-api": "*",
+		"voicechat": "*"
+	},
+	"suggests": {
+		"modmenu": "*",
+		"cloth-config": "*"
+	}
+}

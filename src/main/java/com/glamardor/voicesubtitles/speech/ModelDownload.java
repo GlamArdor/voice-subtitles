@@ -1,0 +1,75 @@
+package com.glamardor.voicesubtitles.speech;
+
+import com.glamardor.voicesubtitles.VoiceSubtitles;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.toast.SystemToast;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * Fetching a recognition model, in the background, at most one at a time.
+ *
+ * <p>Shared by the automatic first-run download and the {@code /vsub model
+ * download} command, so the two can never race each other into the same folder.
+ *
+ * <p>Progress is reported wherever the player can actually see it: a toast in
+ * the corner (the download usually starts at the main menu, where there is no
+ * chat yet) and the log.
+ */
+public final class ModelDownload {
+
+	private static final AtomicBoolean RUNNING = new AtomicBoolean(false);
+
+	private ModelDownload() {
+	}
+
+	public static boolean isRunning() {
+		return RUNNING.get();
+	}
+
+	/**
+	 * Starts a download unless one is already going.
+	 *
+	 * @param onFinished run on the client thread once the model is in place
+	 * @return false if another download is already running
+	 */
+	public static boolean startOnce(VoskModels.Entry entry, Runnable onFinished) {
+		if (!RUNNING.compareAndSet(false, true)) {
+			return false;
+		}
+
+		toast(Text.translatable("toast.voice_subtitles.model.downloading"),
+				Text.translatable("toast.voice_subtitles.model.size", entry.language(), entry.megabytes()));
+		VoiceSubtitles.LOGGER.info("Downloading speech model '{}' ({} MB)", entry.id(), entry.megabytes());
+
+		Thread thread = new Thread(() -> {
+			try {
+				VoskModels.download(entry, percent -> {
+					if (percent % 25 == 0 && percent > 0 && percent < 100) {
+						VoiceSubtitles.LOGGER.info("Model '{}': {}%", entry.id(), percent);
+					}
+				});
+				toast(Text.translatable("toast.voice_subtitles.model.ready"),
+						Text.translatable("toast.voice_subtitles.model.ready.detail", entry.language()));
+				MinecraftClient.getInstance().execute(onFinished);
+			} catch (Exception e) {
+				VoiceSubtitles.LOGGER.error("Could not download the speech model", e);
+				toast(Text.translatable("toast.voice_subtitles.model.failed"),
+						Text.literal(String.valueOf(e.getMessage())).formatted(Formatting.RED));
+			} finally {
+				RUNNING.set(false);
+			}
+		}, "voice-subtitles-model-download");
+		thread.setDaemon(true);
+		thread.start();
+		return true;
+	}
+
+	private static void toast(Text title, Text description) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		client.execute(() -> client.getToastManager().add(
+				new SystemToast(SystemToast.Type.PERIODIC_NOTIFICATION, title, description)));
+	}
+}
