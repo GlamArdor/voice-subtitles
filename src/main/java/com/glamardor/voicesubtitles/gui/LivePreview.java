@@ -17,7 +17,7 @@ import java.util.List;
  * trial and error, three menu round trips at a time. So the widgets are read
  * every tick and written straight into the live config.
  *
- * <p>That leaves the promise Cloth makes — that escape discards your edits —
+ * <p>That leaves the promise Cloth makes – that escape discards your edits –
  * which is worth keeping. The config is copied when the screen opens and copied
  * back when it closes without a save, so a preview stays a preview.
  */

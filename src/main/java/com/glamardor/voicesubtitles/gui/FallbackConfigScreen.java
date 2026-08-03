@@ -45,7 +45,7 @@ public class FallbackConfigScreen extends Screen {
 	 * Leaves the world visible behind this screen.
 	 *
 	 * <p>A screen opened in game lays a dark gradient over the whole window,
-	 * which is a different mechanism from the blur it applies over menus — and
+	 * which is a different mechanism from the blur it applies over menus – and
 	 * it would cover the captions these settings are adjusting.
 	 */
 	@Override
