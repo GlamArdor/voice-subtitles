@@ -3,7 +3,6 @@
 	"voice_subtitles.config.reset": "Сбросить всё",
 	"voice_subtitles.config.reset.tooltip": "Вернуть все настройки к значениям по умолчанию.",
 	"voice_subtitles.config.no_cloth": "Установите Cloth Config для расширенного экрана настроек",
-
 	"voice_subtitles.category.general": "Основное",
 	"voice_subtitles.category.speech": "Распознавание",
 	"voice_subtitles.category.names": "Имена",
@@ -11,7 +10,6 @@
 	"voice_subtitles.category.layout": "Внешний вид",
 	"voice_subtitles.category.over_head": "Над головой",
 	"voice_subtitles.category.log": "Журнал разговора",
-
 	"category.voice_subtitles": "Voice Subtitles",
 	"key.voice_subtitles.toggle": "Включить или выключить субтитры",
 	"key.voice_subtitles.placement": "Переключить, где показывать",
@@ -19,10 +17,8 @@
 	"voice_subtitles.message.on": "Субтитры включены",
 	"voice_subtitles.message.off": "Субтитры выключены",
 	"voice_subtitles.message.placement": "Субтитры: %s",
-
 	"voice_subtitles.loading.percent": "Загружаю модель «%s» – %s %%",
 	"voice_subtitles.loading.elapsed": "Загружаю модель «%s» – %s с",
-
 	"voice_subtitles.log.title": "Журнал разговора",
 	"voice_subtitles.log.disclaimer": "Речь распознана автоматически и может быть передана неточно.",
 	"voice_subtitles.log.open": "Открыть журнал разговора",
@@ -33,7 +29,6 @@
 	"voice_subtitles.log.exported": "Сохранено: config/voice_subtitles/logs/%s",
 	"voice_subtitles.log.export_failed": "Не удалось сохранить файл – подробности в логе игры",
 	"voice_subtitles.log.hint": "Журнал живёт в памяти игры и открывается командой /vsub log или горячей клавишей. Реплики из голосового чата распознаны автоматически, поэтому журнал – напоминание о разговоре, а не его стенограмма; сообщения из текстового чата помечены [chat] и точны.",
-
 	"voice_subtitles.option.enabled": "Включено",
 	"voice_subtitles.option.enabled.tooltip": "Выключить субтитры, не удаляя мод.",
 	"voice_subtitles.option.mode": "Что показывать",
@@ -52,26 +47,23 @@
 	"voice_subtitles.option.whisper_opacity.tooltip": "Шёпот показывается бледнее обычной речи.",
 	"voice_subtitles.option.chat_strip_prefix": "Убирать имя из текста чата",
 	"voice_subtitles.option.chat_strip_prefix.tooltip": "Сервер уже пишет имя перед сообщением, а субтитры показывают его отдельно.",
-
 	"voice_subtitles.option.speech_enabled": "Распознавать речь",
 	"voice_subtitles.option.speech_enabled.tooltip": "Выключено – субтитры показывают только, кто говорит, без слов.",
 	"voice_subtitles.option.model_id": "Модель",
-	"voice_subtitles.option.model_id.tooltip": "Код языка: ru, en, uk, de, fr, es, pl, it. Пусто – по языку игры.",
+	"voice_subtitles.option.model_id.tooltip": "Код языка: ru, en, uk, de, fr, es, pl, it, ja. Пусто – по языку игры. Полный список: /vsub model list.",
 	"voice_subtitles.option.auto_download": "Скачивать модель сама",
 	"voice_subtitles.option.auto_download.tooltip": "При первом запуске подтягивает модель под язык игры. Иначе – /vsub model download.",
 	"voice_subtitles.option.show_partial": "Показывать на лету",
 	"voice_subtitles.option.show_partial.tooltip": "Слова появляются по мере распознавания, ещё до конца фразы.",
 	"voice_subtitles.option.max_recognizers": "Одновременных распознаваний",
 	"voice_subtitles.option.max_recognizers.tooltip": "Сколько человек распознаётся разом. Остальные показываются без слов. Больше – тяжелее для процессора.",
-	"voice_subtitles.option.model.hint": "Список моделей: /vsub model list. Скачать: /vsub model download ru. Большая русская модель ru-large точнее, но весит 1,8 ГБ и столько же занимает в памяти.",
-
+	"voice_subtitles.option.model.hint": "Список моделей: /vsub model list. Скачать: /vsub model download ru.\nМодели на Vosk: ru (45 МБ) и ru-large (1,8 ГБ, точнее, но грузится около минуты и требует столько же памяти).\nМодели на sherpa-onnx: ru-fast (23 МБ), ru-onnx (85 МБ), ru-tone (123 МБ) – грузятся за секунды. Для них мод один раз докачивает нативную библиотеку под вашу систему (7–30 МБ) с GitHub, из релизов проекта sherpa-onnx.",
 	"voice_subtitles.option.name_source": "Источник имени",
 	"voice_subtitles.option.name_source.tooltip": "На ролевых серверах в списке игроков стоит именно ролевое имя.",
 	"voice_subtitles.option.keep_server_style": "Сохранять оформление сервера",
 	"voice_subtitles.option.keep_server_style.tooltip": "Рисовать имя так, как его оформил сервер, а не перекрашивать.",
 	"voice_subtitles.option.show_head": "Показывать голову",
 	"voice_subtitles.option.show_head.tooltip": "Рисовать лицо говорящего перед именем.",
-
 	"voice_subtitles.option.color_mode": "Режим цвета",
 	"voice_subtitles.option.color_mode.tooltip": "Цвета, назначенные вручную, всегда в приоритете.",
 	"voice_subtitles.option.color_speech": "Красить речь",
@@ -79,7 +71,6 @@
 	"voice_subtitles.option.color_names": "Красить имена",
 	"voice_subtitles.option.color_names.tooltip": "По умолчанию имена сохраняют оформление сервера и не перекрашиваются.",
 	"voice_subtitles.option.manual_colors.hint": "Назначить цвет вручную: /vsub color <игрок> <#RRGGBB>. Сбросить: /vsub color <игрок> reset.",
-
 	"voice_subtitles.option.centered": "Лента по центру",
 	"voice_subtitles.option.centered.tooltip": "Выключено – лента прижимается к левому краю.",
 	"voice_subtitles.option.bottom_offset": "Высота над низом экрана",
@@ -108,14 +99,12 @@
 	"voice_subtitles.option.log_capacity.tooltip": "Сколько реплик хранится, прежде чем самые старые вытесняются.",
 	"voice_subtitles.option.hide_with_hud": "Прятать по F1",
 	"voice_subtitles.option.hide_with_hud.tooltip": "По умолчанию субтитры остаются на экране при скрытом интерфейсе – тому, кто читает разговор вместо того, чтобы слышать, терять его на скриншоте ни к чему.",
-
 	"voice_subtitles.option.over_head_height": "Высота над головой",
 	"voice_subtitles.option.over_head_height.tooltip": "В сотых блока над макушкой говорящего.",
 	"voice_subtitles.option.over_head_width": "Ширина реплики",
 	"voice_subtitles.option.over_head_width.tooltip": "После этой ширины реплика переносится на новую строку.",
 	"voice_subtitles.option.over_head_walls": "Видно сквозь стены",
 	"voice_subtitles.option.over_head_walls.tooltip": "Как и сам голос, который слышно сквозь преграды.",
-
 	"voice_subtitles.value.mode.voice": "Только голосовой чат",
 	"voice_subtitles.value.mode.voice_and_chat": "Голосовой и текстовый чат",
 	"voice_subtitles.value.mode.chat": "Только текстовый чат",
@@ -127,13 +116,11 @@
 	"voice_subtitles.value.color_mode.white": "Все белые",
 	"voice_subtitles.value.color_mode.by_uuid": "По UUID игрока",
 	"voice_subtitles.value.color_mode.manual": "Только назначенные вручную",
-
 	"voice_subtitles.unit.percent": "%s %%",
 	"voice_subtitles.unit.pixels": "%s пикс.",
 	"voice_subtitles.unit.millis": "%s мс",
 	"voice_subtitles.unit.seconds": "%s с",
 	"voice_subtitles.unit.blocks": "%s блоков",
-
 	"commands.voice_subtitles.help.color": "/vsub color <игрок> <#RRGGBB|reset> – цвет конкретного игрока",
 	"commands.voice_subtitles.help.model": "/vsub model list|download <id>|use <id>|status – модели распознавания",
 	"commands.voice_subtitles.help.log": "/vsub log – журнал разговора",
@@ -142,7 +129,6 @@
 	"commands.voice_subtitles.color.cleared": "Цвет для %s убран",
 	"commands.voice_subtitles.color.set": "Цвет для %s назначен",
 	"commands.voice_subtitles.color.bad_hex": "Это не шестнадцатеричный цвет: %s",
-
 	"commands.voice_subtitles.model.list": "── модели распознавания ──",
 	"commands.voice_subtitles.model.installed": "установлена",
 	"commands.voice_subtitles.model.hint": "/vsub model download <id> – скачать, /vsub model use <id> – переключиться",
@@ -154,10 +140,14 @@
 	"commands.voice_subtitles.model.failed": "Не удалось скачать: %s",
 	"commands.voice_subtitles.model.missing": "Модель %1$s не скачана – /vsub model download %1$s",
 	"commands.voice_subtitles.model.using": "Язык распознавания: %s",
-
 	"toast.voice_subtitles.model.downloading": "Voice Subtitles",
 	"toast.voice_subtitles.model.size": "Скачиваю модель распознавания: %s, %s МБ",
 	"toast.voice_subtitles.model.ready": "Voice Subtitles",
 	"toast.voice_subtitles.model.ready.detail": "Распознавание готово: %s",
-	"toast.voice_subtitles.model.failed": "Voice Subtitles: не удалось скачать модель"
+	"toast.voice_subtitles.model.failed": "Voice Subtitles: не удалось скачать модель",
+	"toast.voice_subtitles.native.downloading": "Voice Subtitles",
+	"toast.voice_subtitles.native.size": "Скачиваю библиотеку распознавания sherpa-onnx: %s, %s МБ",
+	"toast.voice_subtitles.native.ready": "Voice Subtitles",
+	"toast.voice_subtitles.native.ready.detail": "Библиотека sherpa-onnx установлена",
+	"toast.voice_subtitles.native.failed": "Voice Subtitles: не удалось скачать библиотеку sherpa-onnx"
 }

@@ -41,6 +41,11 @@ dependencies {
 	implementation "net.java.dev.jna:jna:${project.jna_version}"
 	include "net.java.dev.jna:jna:${project.jna_version}"
 
+	// sherpa-onnx ships its models and its native library as bzip2 tarballs, and
+	// Java reads neither format on its own.
+	implementation "org.apache.commons:commons-compress:${project.commons_compress_version}"
+	include "org.apache.commons:commons-compress:${project.commons_compress_version}"
+
 	// In-game settings screen. Compile-time only: the mod ships its own screen and
 	// only reaches for Cloth when Cloth is actually installed.
 	modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:${project.cloth_config_version}") {

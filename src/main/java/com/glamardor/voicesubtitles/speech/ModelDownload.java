@@ -35,7 +35,7 @@ public final class ModelDownload {
 	 * @param onFinished run on the client thread once the model is in place
 	 * @return false if another download is already running
 	 */
-	public static boolean startOnce(VoskModels.Entry entry, Runnable onFinished) {
+	public static boolean startOnce(SpeechModels.Entry entry, Runnable onFinished) {
 		if (!RUNNING.compareAndSet(false, true)) {
 			return false;
 		}
@@ -46,7 +46,7 @@ public final class ModelDownload {
 
 		Thread thread = new Thread(() -> {
 			try {
-				VoskModels.download(entry, percent -> {
+				SpeechModels.download(entry, percent -> {
 					if (percent % 25 == 0 && percent > 0 && percent < 100) {
 						VoiceSubtitles.LOGGER.info("Model '{}': {}%", entry.id(), percent);
 					}
@@ -62,6 +62,46 @@ public final class ModelDownload {
 				RUNNING.set(false);
 			}
 		}, "voice-subtitles-model-download");
+		thread.setDaemon(true);
+		thread.start();
+		return true;
+	}
+
+	/**
+	 * Fetches the sherpa-onnx native library, once.
+	 *
+	 * <p>Kept apart from the model download and announced separately, because it
+	 * is a different kind of thing: this is executable code, and a player has a
+	 * right to see it said plainly rather than folded into "downloading a model".
+	 */
+	public static boolean startNativesOnce(SherpaNatives.Build build, Runnable onFinished) {
+		if (!RUNNING.compareAndSet(false, true)) {
+			return false;
+		}
+
+		toast(Text.translatable("toast.voice_subtitles.native.downloading"),
+				Text.translatable("toast.voice_subtitles.native.size", build.platform(), build.megabytes()));
+		VoiceSubtitles.LOGGER.info("Downloading the sherpa-onnx native library for {} ({} MB)",
+				build.platform(), build.megabytes());
+
+		Thread thread = new Thread(() -> {
+			try {
+				SherpaNatives.download(build, percent -> {
+					if (percent % 25 == 0 && percent > 0 && percent < 100) {
+						VoiceSubtitles.LOGGER.info("sherpa-onnx library: {}%", percent);
+					}
+				});
+				toast(Text.translatable("toast.voice_subtitles.native.ready"),
+						Text.translatable("toast.voice_subtitles.native.ready.detail"));
+				MinecraftClient.getInstance().execute(onFinished);
+			} catch (Exception e) {
+				VoiceSubtitles.LOGGER.error("Could not download the sherpa-onnx native library", e);
+				toast(Text.translatable("toast.voice_subtitles.native.failed"),
+						Text.literal(String.valueOf(e.getMessage())).formatted(Formatting.RED));
+			} finally {
+				RUNNING.set(false);
+			}
+		}, "voice-subtitles-native-download");
 		thread.setDaemon(true);
 		thread.start();
 		return true;

@@ -3,7 +3,7 @@ package com.glamardor.voicesubtitles;
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import com.glamardor.voicesubtitles.speech.ModelDownload;
 import com.glamardor.voicesubtitles.speech.SpeechRecognition;
-import com.glamardor.voicesubtitles.speech.VoskModels;
+import com.glamardor.voicesubtitles.speech.SpeechModels;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -21,10 +21,10 @@ public final class ModelCommands {
 
 	private static final SuggestionProvider<FabricClientCommandSource> MODEL_SUGGESTIONS = (ctx, builder) -> {
 		String remaining = builder.getRemainingLowerCase();
-		for (VoskModels.Entry entry : VoskModels.catalogue().values()) {
+		for (SpeechModels.Entry entry : SpeechModels.catalogue().values()) {
 			if (entry.id().startsWith(remaining)) {
 				builder.suggest(entry.id(), Text.literal(entry.language()
-						+ (VoskModels.isInstalled(entry) ? " – installed" : " – " + entry.megabytes() + " MB")));
+						+ (SpeechModels.isInstalled(entry) ? " – installed" : " – " + entry.megabytes() + " MB")));
 			}
 		}
 		return builder.buildFuture();
@@ -53,8 +53,8 @@ public final class ModelCommands {
 	private static int list(FabricClientCommandSource source) {
 		String current = VoiceSubtitlesConfig.get().modelId;
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.model.list").formatted(Formatting.GOLD));
-		for (VoskModels.Entry entry : VoskModels.catalogue().values()) {
-			boolean installed = VoskModels.isInstalled(entry);
+		for (SpeechModels.Entry entry : SpeechModels.catalogue().values()) {
+			boolean installed = SpeechModels.isInstalled(entry);
 			Text mark = Text.literal(entry.id().equals(current) ? " ◄" : "").formatted(Formatting.GREEN);
 			source.sendFeedback(Text.literal("  " + entry.id() + " – " + entry.language() + " ")
 					.formatted(Formatting.WHITE)
@@ -99,12 +99,12 @@ public final class ModelCommands {
 	}
 
 	private static int download(FabricClientCommandSource source, String id) {
-		VoskModels.Entry entry = VoskModels.byId(id);
+		SpeechModels.Entry entry = SpeechModels.byId(id);
 		if (entry == null) {
 			source.sendFeedback(Text.translatable("commands.voice_subtitles.model.unknown", id).formatted(Formatting.RED));
 			return 0;
 		}
-		if (VoskModels.isInstalled(entry)) {
+		if (SpeechModels.isInstalled(entry)) {
 			source.sendFeedback(Text.translatable("commands.voice_subtitles.model.already", entry.id())
 					.formatted(Formatting.GRAY));
 			return 1;
@@ -127,7 +127,7 @@ public final class ModelCommands {
 	}
 
 	private static int use(FabricClientCommandSource source, String id) {
-		VoskModels.Entry entry = VoskModels.byId(id);
+		SpeechModels.Entry entry = SpeechModels.byId(id);
 		if (entry == null) {
 			source.sendFeedback(Text.translatable("commands.voice_subtitles.model.unknown", id).formatted(Formatting.RED));
 			return 0;
@@ -137,7 +137,7 @@ public final class ModelCommands {
 		VoiceSubtitlesConfig.save();
 		SpeechRecognition.reload();
 
-		source.sendFeedback(VoskModels.isInstalled(entry)
+		source.sendFeedback(SpeechModels.isInstalled(entry)
 				? Text.translatable("commands.voice_subtitles.model.using", entry.language()).formatted(Formatting.GREEN)
 				: Text.translatable("commands.voice_subtitles.model.missing", entry.id()).formatted(Formatting.YELLOW));
 		return 1;

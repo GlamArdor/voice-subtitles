@@ -3,14 +3,8 @@ package com.glamardor.voicesubtitles.speech;
 import com.glamardor.voicesubtitles.SubtitleFeed;
 import com.glamardor.voicesubtitles.VoiceSubtitles;
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
-import org.vosk.LibVosk;
-import org.vosk.LogLevel;
-import org.vosk.Model;
-import org.vosk.Recognizer;
 
 import java.util.Map;
 import java.util.UUID;
@@ -22,20 +16,23 @@ import java.util.concurrent.TimeUnit;
 /**
  * Offline speech recognition for incoming voice.
  *
- * <p>One shared acoustic model, one recogniser per speaker. Audio arrives on the
- * voice chat's own thread and must never be held up there, so frames are dropped
- * into a bounded queue and a worker per speaker does the actual work: resample
- * 48 kHz down to the 16 kHz Vosk wants, feed it, and push whatever comes back
+ * <p>One shared model, one recogniser per speaker. Audio arrives on the voice
+ * chat's own thread and must never be held up there, so frames are dropped into
+ * a bounded queue and a worker per speaker does the actual work: resample 48 kHz
+ * down to the 16 kHz the engines want, feed it, and push whatever comes back
  * into the subtitle feed – partial results while the sentence is still forming,
- * a settled one when Vosk decides the utterance ended.
+ * a settled one when the utterance ends.
  *
  * <p>If the queue fills up, frames are dropped rather than queued forever. A
  * recogniser that has fallen that far behind will not catch up, and a caption
  * that arrives ten seconds late is worse than one that misses a word.
  *
- * <p>Everything here degrades quietly: no model, a native library that will not
- * load, a machine too slow to keep up – the mod keeps showing who is talking,
- * just without the words.
+ * <p>The engine itself lives behind {@link SpeechEngine}; which one runs follows
+ * from the model that was chosen. Everything here is the same either way.
+ *
+ * <p>Everything degrades quietly: no model, a native library that will not load,
+ * a machine too slow to keep up – the mod keeps showing who is talking, just
+ * without the words.
  */
 public final class SpeechRecognition {
 
@@ -51,9 +48,6 @@ public final class SpeechRecognition {
 		/** Something went wrong; see {@link #failure()}. */
 		FAILED
 	}
-
-	/** Sample rate the recogniser runs at. */
-	private static final float RECOGNITION_RATE = 16_000F;
 
 	/** Two seconds of 20 ms frames – beyond that we are not catching up anyway. */
 	private static final int QUEUE_CAPACITY = 100;
@@ -80,7 +74,7 @@ public final class SpeechRecognition {
 
 	private static volatile State state = State.DISABLED;
 	private static volatile String failure = "";
-	private static volatile Model model;
+	private static volatile SpeechEngine engine;
 
 	/** Which model is loaded or on its way in, so a reload can skip the work. */
 	private static volatile String currentModelId;
@@ -117,16 +111,21 @@ public final class SpeechRecognition {
 			state = State.NO_MODEL;
 			return;
 		}
-		VoskModels.Entry entry = VoskModels.byId(id);
+		SpeechModels.Entry entry = SpeechModels.byId(id);
 		if (entry == null) {
 			state = State.NO_MODEL;
 			return;
 		}
-		if (!VoskModels.isInstalled(entry)) {
+		if (!SpeechModels.isInstalled(entry)) {
 			state = State.NO_MODEL;
 			if (cfg.autoDownloadModel) {
 				ModelDownload.startOnce(entry, SpeechRecognition::init);
 			}
+			return;
+		}
+		// A sherpa model is useless without the library that runs it, and that is
+		// a separate download; ask for it before claiming to be loading.
+		if (entry.engine() == SpeechModels.Engine.SHERPA && !nativesReady(cfg)) {
 			return;
 		}
 
@@ -135,12 +134,13 @@ public final class SpeechRecognition {
 		loadStartedAt = System.currentTimeMillis();
 		Thread loader = new Thread(() -> {
 			try {
-				LibVosk.setLogLevel(LogLevel.WARNINGS);
-				model = new Model(VoskModels.pathOf(entry).toString());
+				engine = entry.engine() == SpeechModels.Engine.SHERPA
+						? SherpaEngine.load(entry)
+						: VoskEngine.load(entry);
 				state = State.READY;
-				rememberLoadTime(entry.id(), System.currentTimeMillis() - loadStartedAt);
-				VoiceSubtitles.LOGGER.info("Speech model '{}' loaded in {} ms",
-						entry.id(), System.currentTimeMillis() - loadStartedAt);
+				long took = System.currentTimeMillis() - loadStartedAt;
+				rememberLoadTime(entry.id(), took);
+				VoiceSubtitles.LOGGER.info("Speech model '{}' loaded in {} ms", entry.id(), took);
 			} catch (Throwable t) {
 				// Throwable, not Exception: a missing or unloadable native
 				// library surfaces as UnsatisfiedLinkError, and that must not
@@ -155,9 +155,37 @@ public final class SpeechRecognition {
 	}
 
 	/**
+	 * Makes sure the sherpa-onnx library is on disk and in the JVM.
+	 *
+	 * @return true when recognition can go ahead; otherwise the state has been
+	 *         set to explain why and a download may have been started
+	 */
+	private static boolean nativesReady(VoiceSubtitlesConfig cfg) {
+		SherpaNatives.Build build = SherpaNatives.buildForThisMachine();
+		if (build == null) {
+			state = State.FAILED;
+			failure = "sherpa-onnx has no build for this platform; pick a Vosk model instead";
+			return false;
+		}
+		if (!SherpaNatives.isInstalled(build)) {
+			state = State.NO_MODEL;
+			if (cfg.autoDownloadModel) {
+				ModelDownload.startNativesOnce(build, SpeechRecognition::init);
+			}
+			return false;
+		}
+		if (!SherpaNatives.load()) {
+			state = State.FAILED;
+			failure = SherpaNatives.failure();
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * The model to use: whatever is configured, or – on a fresh install – the
 	 * one matching the game's own language, since that is very likely the
-	 * language being spoken. Falls back to English for languages Vosk has no
+	 * language being spoken. Falls back to English for languages we have no
 	 * small model for.
 	 *
 	 * @return null while the game options do not exist yet, which is the case
@@ -173,7 +201,7 @@ public final class SpeechRecognition {
 		}
 		String language = options.language; // e.g. "ru_ru"
 		String code = language == null ? "en" : language.split("_")[0];
-		String chosen = VoskModels.byId(code) != null ? code : "en";
+		String chosen = SpeechModels.byId(code) != null ? code : "en";
 
 		cfg.modelId = chosen;
 		VoiceSubtitlesConfig.save();
@@ -254,8 +282,8 @@ public final class SpeechRecognition {
 			session.close();
 		}
 		SESSIONS.clear();
-		Model current = model;
-		model = null;
+		SpeechEngine current = engine;
+		engine = null;
 		currentModelId = null;
 		state = State.DISABLED;
 		if (current != null) {
@@ -300,12 +328,16 @@ public final class SpeechRecognition {
 			// already running.
 			return null;
 		}
-		Model current = model;
+		SpeechEngine current = engine;
 		if (current == null) {
 			return null;
 		}
 		try {
-			Session session = new Session(speaker, new Recognizer(current, RECOGNITION_RATE));
+			SpeechEngine.Stream stream = current.open();
+			if (stream == null) {
+				return null;
+			}
+			Session session = new Session(speaker, stream);
 			Session raced = SESSIONS.putIfAbsent(speaker, session);
 			if (raced != null) {
 				session.close();
@@ -322,7 +354,7 @@ public final class SpeechRecognition {
 	private static final class Session {
 
 		private final UUID speaker;
-		private final Recognizer recognizer;
+		private final SpeechEngine.Stream stream;
 		private final Resampler resampler = new Resampler();
 		private final BlockingQueue<short[]> queue = new ArrayBlockingQueue<>(QUEUE_CAPACITY);
 		private final Thread worker;
@@ -333,9 +365,9 @@ public final class SpeechRecognition {
 		/** The last settled sentence, to recognise it being reported twice. */
 		private String lastSettled = "";
 
-		Session(UUID speaker, Recognizer recognizer) {
+		Session(UUID speaker, SpeechEngine.Stream stream) {
 			this.speaker = speaker;
-			this.recognizer = recognizer;
+			this.stream = stream;
 			this.worker = new Thread(this::run, "voice-subtitles-asr-" + speaker);
 			this.worker.setDaemon(true);
 			// Recognition is background work; the game comes first.
@@ -387,7 +419,7 @@ public final class SpeechRecognition {
 				}
 				SESSIONS.remove(speaker, this);
 				try {
-					recognizer.close();
+					stream.close();
 				} catch (Throwable ignored) {
 				}
 			}
@@ -395,16 +427,16 @@ public final class SpeechRecognition {
 
 		private void consume(short[] frame) {
 			unsettled = true;
-			byte[] pcm = Resampler.toBytes(resampler.process(frame));
-			if (recognizer.acceptWaveForm(pcm, pcm.length)) {
-				String text = field(recognizer.getResult(), "text");
+			String finished = stream.accept(resampler.process(frame));
+			if (finished != null) {
+				// The engine found the end of an utterance by itself.
 				unsettled = false;
-				lastSettled = text;
-				if (!text.isBlank()) {
-					SubtitleFeed.putText(speaker, text, true);
+				lastSettled = finished;
+				if (!finished.isBlank()) {
+					SubtitleFeed.putText(speaker, finished, true);
 				}
 			} else if (VoiceSubtitlesConfig.get().showPartial) {
-				String partial = field(recognizer.getPartialResult(), "partial");
+				String partial = stream.partial();
 				if (!partial.isBlank()) {
 					SubtitleFeed.putText(speaker, partial, false);
 				}
@@ -418,42 +450,20 @@ public final class SpeechRecognition {
 		 */
 		private void settle() {
 			unsettled = false;
-			String text = field(recognizer.getFinalResult(), "text");
-			// Vosk hands back the whole sentence again when it settles something
-			// it has already reported; repeating it would read as a duplicate.
+			String text = stream.settle();
+			resampler.reset();
+			// Engines hand back the whole sentence again when they settle
+			// something already reported; repeating it would read as a duplicate.
 			if (!text.isBlank() && text.equals(lastSettled)) {
-				resetOf(recognizer, resampler);
 				SubtitleFeed.close(speaker);
 				return;
 			}
 			lastSettled = text;
-			resetOf(recognizer, resampler);
 			if (!text.isBlank()) {
 				SubtitleFeed.putText(speaker, text, true);
 			} else {
 				SubtitleFeed.close(speaker);
 			}
-		}
-	}
-
-	/** Wipes the recogniser and the resampler so the next sentence starts clean. */
-	private static void resetOf(Recognizer recognizer, Resampler resampler) {
-		try {
-			recognizer.reset();
-		} catch (Throwable ignored) {
-			// getFinalResult already resets on every version we know of; this is
-			// belt and braces.
-		}
-		resampler.reset();
-	}
-
-	/** Vosk answers in JSON: {@code {"text": "..."}} or {@code {"partial": "..."}}. */
-	private static String field(String json, String key) {
-		try {
-			JsonObject object = JsonParser.parseString(json).getAsJsonObject();
-			return object.has(key) ? object.get(key).getAsString() : "";
-		} catch (Exception e) {
-			return "";
 		}
 	}
 }
