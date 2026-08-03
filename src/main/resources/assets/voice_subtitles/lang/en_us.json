@@ -152,7 +152,7 @@
 	"commands.voice_subtitles.model.downloading": "Downloading model %s (%s MB). The game keeps running.",
 	"commands.voice_subtitles.model.done": "Model %s installed and enabled",
 	"commands.voice_subtitles.model.failed": "Download failed: %s",
-	"commands.voice_subtitles.model.missing": "Model %s is not downloaded – /vsub model download %s",
+	"commands.voice_subtitles.model.missing": "Model %1$s is not downloaded – /vsub model download %1$s",
 	"commands.voice_subtitles.model.using": "Recognition language: %s",
 
 	"toast.voice_subtitles.model.downloading": "Voice Subtitles",

@@ -152,7 +152,7 @@
 	"commands.voice_subtitles.model.downloading": "Качаю модель %s (%s МБ). Игра продолжает работать.",
 	"commands.voice_subtitles.model.done": "Модель %s установлена и включена",
 	"commands.voice_subtitles.model.failed": "Не удалось скачать: %s",
-	"commands.voice_subtitles.model.missing": "Модель %s не скачана — /vsub model download %s",
+	"commands.voice_subtitles.model.missing": "Модель %1$s не скачана — /vsub model download %1$s",
 	"commands.voice_subtitles.model.using": "Язык распознавания: %s",
 
 	"toast.voice_subtitles.model.downloading": "Voice Subtitles",
