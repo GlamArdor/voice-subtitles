@@ -24,8 +24,19 @@ public final class SpeechModels {
 
 	/** Which back end a model runs on. */
 	public enum Engine {
+		/** Kaldi. Streaming, and the accurate models are enormous. */
 		VOSK,
-		SHERPA
+		/** sherpa-onnx, streaming: words appear as they are said. */
+		SHERPA_STREAMING,
+		/**
+		 * sherpa-onnx, whole utterance at a time: the accurate models, at the
+		 * cost of a second or two between the speech and the caption.
+		 */
+		SHERPA_OFFLINE;
+
+		public boolean isSherpa() {
+			return this != VOSK;
+		}
 	}
 
 	/**
@@ -60,10 +71,20 @@ public final class SpeechModels {
 		vosk("it", "Italiano", "vosk-model-small-it-0.22", 48);
 		vosk("ja", "日本語", "vosk-model-small-ja-0.22", 48);
 
-		// ── sherpa-onnx: streaming, and far quicker to load ──────────────────
-		sherpa("ru-fast", "Русский (быстрая)", "sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16", 23);
-		sherpa("ru-onnx", "Русский (точная)", "sherpa-onnx-streaming-zipformer-small-ru-vosk-2025-08-16", 85);
-		sherpa("ru-tone", "Русский (T-one)", "sherpa-onnx-streaming-t-one-russian-2025-09-08", 123);
+		// ── sherpa-onnx, streaming: words appear as they are said ────────────
+		streaming("ru-fast", "Русский (быстрая)", "sherpa-onnx-streaming-zipformer-small-ru-vosk-int8-2025-08-16", 23);
+		streaming("ru-stream", "Русский (потоковая)", "sherpa-onnx-streaming-zipformer-small-ru-vosk-2025-08-16", 85);
+		streaming("ru-tone", "Русский (T-one)", "sherpa-onnx-streaming-t-one-russian-2025-09-08", 123);
+
+		// ── sherpa-onnx, whole utterance: the accurate ones ──────────────────
+		// GigaAM writes punctuation and capitals of its own accord, which no
+		// other model here does.
+		offline("ru-giga", "Русский (GigaAM v3)", "sherpa-onnx-nemo-ctc-punct-giga-am-v3-russian-2025-12-16", 156);
+		offline("ru-giga-rnnt", "Русский (GigaAM v3 RNN-T)", "sherpa-onnx-nemo-transducer-punct-giga-am-v3-russian-2025-12-16", 162);
+		// The same lineage as ru-large, exported to ONNX: a fraction of the size
+		// and seconds rather than a minute to load.
+		offline("ru-big", "Русский (большая ONNX)", "sherpa-onnx-zipformer-ru-2025-04-20", 237);
+		offline("ru-big-int8", "Русский (большая ONNX, int8)", "sherpa-onnx-zipformer-ru-int8-2025-04-20", 57);
 	}
 
 	private SpeechModels() {
@@ -73,8 +94,12 @@ public final class SpeechModels {
 		add(new Entry(id, language, folder, VOSK + folder + ".zip", megabytes, Engine.VOSK));
 	}
 
-	private static void sherpa(String id, String language, String folder, int megabytes) {
-		add(new Entry(id, language, folder, SHERPA + folder + ".tar.bz2", megabytes, Engine.SHERPA));
+	private static void streaming(String id, String language, String folder, int megabytes) {
+		add(new Entry(id, language, folder, SHERPA + folder + ".tar.bz2", megabytes, Engine.SHERPA_STREAMING));
+	}
+
+	private static void offline(String id, String language, String folder, int megabytes) {
+		add(new Entry(id, language, folder, SHERPA + folder + ".tar.bz2", megabytes, Engine.SHERPA_OFFLINE));
 	}
 
 	private static void add(Entry entry) {
@@ -110,7 +135,7 @@ public final class SpeechModels {
 		}
 		return entry.engine() == Engine.VOSK
 				? Files.isDirectory(path.resolve("am"))
-				: Files.isRegularFile(path.resolve("tokens.txt"));
+				: Files.isRegularFile(path.resolve("tokens.txt"));  // both sherpa kinds
 	}
 
 	/**

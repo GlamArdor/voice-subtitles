@@ -99,6 +99,14 @@ final class SherpaEngine implements SpeechEngine {
 	 * {@code encoder.onnx} and {@code encoder.int8.onnx} depending on whether it
 	 * is the quantised build.
 	 */
+	static Path findModelFile(Path dir, String prefix) throws IOException {
+		return find(dir, prefix);
+	}
+
+	static Path requireModelFile(Path dir, String prefix) throws IOException {
+		return require(dir, prefix);
+	}
+
 	private static Path find(Path dir, String prefix) throws IOException {
 		// Fully qualified: this class inherits SpeechEngine.Stream, which would
 		// otherwise shadow the one from java.util.stream.
@@ -177,10 +185,11 @@ final class SherpaEngine implements SpeechEngine {
 		@Override
 		public String settle() {
 			try {
-				// A little silence first: the encoder needs audio past the last
-				// word before it will commit to it, and without this the final
-				// word of a sentence is regularly the one that goes missing.
-				stream.acceptWaveform(new float[RATE / 4], RATE);
+				// Half a second of silence first: the encoder needs audio past
+				// the last word before it will commit to it, and without this
+				// the final word of a sentence is regularly the one that goes
+				// missing. Measured on T-one, which needs the most of it.
+				stream.acceptWaveform(new float[RATE / 2], RATE);
 				while (recognizer.isReady(stream)) {
 					recognizer.decode(stream);
 				}

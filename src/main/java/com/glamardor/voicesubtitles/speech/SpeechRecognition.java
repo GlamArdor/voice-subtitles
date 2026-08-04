@@ -125,7 +125,7 @@ public final class SpeechRecognition {
 		}
 		// A sherpa model is useless without the library that runs it, and that is
 		// a separate download; ask for it before claiming to be loading.
-		if (entry.engine() == SpeechModels.Engine.SHERPA && !nativesReady(cfg)) {
+		if (entry.engine().isSherpa() && !nativesReady(cfg)) {
 			return;
 		}
 
@@ -134,9 +134,11 @@ public final class SpeechRecognition {
 		loadStartedAt = System.currentTimeMillis();
 		Thread loader = new Thread(() -> {
 			try {
-				engine = entry.engine() == SpeechModels.Engine.SHERPA
-						? SherpaEngine.load(entry)
-						: VoskEngine.load(entry);
+				engine = switch (entry.engine()) {
+					case SHERPA_STREAMING -> SherpaEngine.load(entry);
+					case SHERPA_OFFLINE -> SherpaOfflineEngine.load(entry);
+					case VOSK -> VoskEngine.load(entry);
+				};
 				state = State.READY;
 				long took = System.currentTimeMillis() - loadStartedAt;
 				rememberLoadTime(entry.id(), took);
