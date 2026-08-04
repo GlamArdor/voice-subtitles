@@ -189,5 +189,21 @@
 	"voice_subtitles.event.quit": "Closed the game",
 	"voice_subtitles.event.death": "Died",
 	"voice_subtitles.event.command": "Command: %s",
-	"voice_subtitles.log.tampered": "The log file was altered outside the game; some entries are not shown"
+	"voice_subtitles.log.tampered": "The log file was altered outside the game; some entries are not shown",
+	"voice_subtitles.option.fade_millis": "Fade length",
+	"voice_subtitles.option.fade_millis.tooltip": "How long a caption takes to arrive. Leaving takes about twice as long: going should be less abrupt than coming.",
+	"voice_subtitles.option.typewriter": "Type the text out",
+	"voice_subtitles.option.typewriter.tooltip": "Recognised words appear a few characters at a time rather than in whole jumps. Nothing is delayed by it: the typing outruns the speaking, and if it ever falls behind it shows everything at once.",
+	"voice_subtitles.option.typewriter_speed": "Typing speed",
+	"voice_subtitles.option.typewriter_speed.tooltip": "Characters per second.",
+	"voice_subtitles.option.over_head_scale": "Text size above the head",
+	"voice_subtitles.option.over_head_scale.tooltip": "100 % is the usual size.",
+	"voice_subtitles.option.over_head_rows": "Rows above the head",
+	"voice_subtitles.option.over_head_rows.tooltip": "No more than this, showing the most recent rows. Otherwise long speech grows downwards until it reaches the floor.",
+	"voice_subtitles.option.over_head_background": "Background above the head",
+	"voice_subtitles.option.over_head_background.tooltip": "How solid the dark plate behind the text is.",
+	"voice_subtitles.option.over_head_name": "Name above the head",
+	"voice_subtitles.option.over_head_name.tooltip": "Show the speaker's name in front of their words.",
+	"voice_subtitles.option.log_chat": "Log the whole chat",
+	"voice_subtitles.option.log_chat.tooltip": "Puts everything the chat showed in the log: server announcements, other people's commands, the results of roleplay. Those lines are marked [CHAT]."
 }

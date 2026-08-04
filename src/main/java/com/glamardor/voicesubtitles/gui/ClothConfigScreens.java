@@ -132,6 +132,12 @@ final class ClothConfigScreens {
 		layout.addEntry(percent(entries, "text_scale", config.textScalePercent, defaults.textScalePercent, 50, 200,
 				v -> config.textScalePercent = v));
 		layout.addEntry(toggle(entries, "fade", config.fade, defaults.fade, v -> config.fade = v));
+		layout.addEntry(slider(entries, "fade_millis", config.fadeMillis, defaults.fadeMillis, 0, 1000,
+				v -> config.fadeMillis = v, ClothConfigScreens::millis));
+		layout.addEntry(toggle(entries, "typewriter", config.typewriter, defaults.typewriter,
+				v -> config.typewriter = v));
+		layout.addEntry(slider(entries, "typewriter_speed", config.typewriterSpeed, defaults.typewriterSpeed,
+				10, 400, v -> config.typewriterSpeed = v, v -> Text.literal(String.valueOf(v))));
 		layout.addEntry(toggle(entries, "hide_with_hud", config.hideWithHud, defaults.hideWithHud,
 				v -> config.hideWithHud = v));
 		layout.addEntry(toggle(entries, "show_direction", config.showDirection, defaults.showDirection,
@@ -140,6 +146,7 @@ final class ClothConfigScreens {
 		// ── Conversation log ────────────────────────────────────────────────
 		ConfigCategory log = category(builder, "log");
 		log.addEntry(toggle(entries, "keep_log", config.keepLog, defaults.keepLog, v -> config.keepLog = v));
+		log.addEntry(toggle(entries, "log_chat", config.logChat, defaults.logChat, v -> config.logChat = v));
 		log.addEntry(toggle(entries, "log_events", config.logEvents, defaults.logEvents, v -> config.logEvents = v));
 		log.addEntry(slider(entries, "log_capacity", config.logCapacity, defaults.logCapacity, 50, 20000,
 				v -> config.logCapacity = v, v -> Text.literal(String.valueOf(v))));
@@ -155,6 +162,14 @@ final class ClothConfigScreens {
 				v -> config.overHeadWidth = v, ClothConfigScreens::pixels));
 		overHead.addEntry(toggle(entries, "over_head_walls", config.overHeadThroughWalls,
 				defaults.overHeadThroughWalls, v -> config.overHeadThroughWalls = v));
+		overHead.addEntry(percent(entries, "over_head_scale", config.overHeadScalePercent,
+				defaults.overHeadScalePercent, 50, 250, v -> config.overHeadScalePercent = v));
+		overHead.addEntry(slider(entries, "over_head_rows", config.overHeadMaxRows, defaults.overHeadMaxRows,
+				1, 10, v -> config.overHeadMaxRows = v, v -> Text.literal(String.valueOf(v))));
+		overHead.addEntry(percent(entries, "over_head_background", config.overHeadBackground,
+				defaults.overHeadBackground, 0, 100, v -> config.overHeadBackground = v));
+		overHead.addEntry(toggle(entries, "over_head_name", config.overHeadShowName, defaults.overHeadShowName,
+				v -> config.overHeadShowName = v));
 
 		Screen screen = ConfigScreenMarker.mark(builder.build());
 		LivePreview.start(screen, LIVE);

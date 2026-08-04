@@ -31,11 +31,6 @@ public final class LogEvents {
 	/** Roleplay commands worth keeping: an action is as much a line as a spoken one. */
 	private static final Set<String> ROLEPLAY = Set.of("me", "try", "do", "todo", "ame", "ado");
 
-	/** How long after such a command the server's answer is taken to be its result. */
-	private static final long RESULT_WINDOW_MS = 3000L;
-
-	private static long lastRoleplayAt;
-
 	private static long lastDeathAt;
 	private static boolean sawDeathScreen;
 	/** Remembered so leaving can name the server, by which time it is already gone. */
@@ -75,24 +70,20 @@ public final class LogEvents {
 			}
 			if (isDeathMessage(message)) {
 				lastDeathAt = System.currentTimeMillis();
-				SubtitleLog.recordEvent(message.copy());
-				return;
 			}
-			// What the server made of a roleplay command. Only when nobody can be
-			// pinned to it, since an attributable line is already filed as speech
-			// and would otherwise land in the log twice.
-			if (System.currentTimeMillis() - lastRoleplayAt < RESULT_WINDOW_MS
-					&& ChatSubtitles.findAuthor(message) == null
-					&& !message.getString().isBlank()) {
-				SubtitleLog.recordEvent(message.copy());
-			}
+			// Everything the chat shows goes in as it appeared, deaths included.
+			// No guessing which line answered which command: whatever the server
+			// printed is in the log, in the order it arrived.
+			SubtitleLog.recordChat(message);
 		});
+
+		ClientReceiveMessageEvents.CHAT.register((message, signed, sender, params, timestamp) ->
+				SubtitleLog.recordChat(message));
 
 		// The command as it was typed. Reliable, unlike guessing from the reply.
 		ClientSendMessageEvents.COMMAND.register(command -> {
 			String name = command.split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
 			if (ROLEPLAY.contains(name)) {
-				lastRoleplayAt = System.currentTimeMillis();
 				SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.command", "/" + command));
 			}
 		});

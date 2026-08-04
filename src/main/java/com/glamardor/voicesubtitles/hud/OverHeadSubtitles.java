@@ -1,6 +1,7 @@
 package com.glamardor.voicesubtitles.hud;
 
 import com.glamardor.voicesubtitles.Captions;
+import com.glamardor.voicesubtitles.NameResolver;
 import com.glamardor.voicesubtitles.SpeakerColors;
 import com.glamardor.voicesubtitles.SubtitleFeed;
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
@@ -12,6 +13,7 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.ColorHelper;
@@ -97,10 +99,20 @@ public final class OverHeadSubtitles {
 			}
 
 			int color = cfg.colorSpeech ? SpeakerColors.colorOf(line.speaker) : SpeakerColors.WHITE;
-			List<OrderedText> rows = textRenderer.wrapLines(
-					Text.literal(Captions.bodyOf(line, now)), cfg.overHeadWidth);
+			MutableText content = Text.empty();
+			if (cfg.overHeadShowName) {
+				content.append(NameResolver.nameOf(line.speaker).copy()).append(Text.literal(": "));
+			}
+			content.append(Text.literal(Captions.bodyOf(line, now)));
+
+			List<OrderedText> rows = textRenderer.wrapLines(content, cfg.overHeadWidth);
 			if (rows.isEmpty()) {
 				continue;
+			}
+			// Long speech is trimmed to the most recent rows: a caption growing
+			// down somebody's body until it reaches the floor helps nobody.
+			if (rows.size() > cfg.overHeadMaxRows) {
+				rows = rows.subList(rows.size() - cfg.overHeadMaxRows, rows.size());
 			}
 
 			Vec3d pos = player.getLerpedPos(tickDelta);
@@ -108,7 +120,8 @@ public final class OverHeadSubtitles {
 
 			draw(matrices, consumers, camera, textRenderer, rows,
 					pos.x - cameraPos.x, y - cameraPos.y, pos.z - cameraPos.z,
-					ColorHelper.withAlpha(alpha, color), alpha, cfg.overHeadThroughWalls);
+					ColorHelper.withAlpha(alpha, color), alpha, cfg.overHeadThroughWalls,
+					cfg.overHeadScalePercent / 100F, cfg.overHeadBackground / 100F);
 			drawn++;
 		}
 
@@ -120,11 +133,12 @@ public final class OverHeadSubtitles {
 	/** Billboards the caption at the given camera-relative position, rows stacked upwards. */
 	private static void draw(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera,
 	                         TextRenderer textRenderer, List<OrderedText> rows,
-	                         double x, double y, double z, int color, int alpha, boolean throughWalls) {
+	                         double x, double y, double z, int color, int alpha, boolean throughWalls,
+	                         float scale, float backgroundOpacity) {
 		matrices.push();
 		matrices.translate(x, y, z);
 		matrices.multiply(camera.getRotation());
-		matrices.scale(TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE);
+		matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale);
 
 		Matrix4f matrix = matrices.peek().getPositionMatrix();
 		TextRenderer.TextLayerType layer = throughWalls
@@ -134,8 +148,7 @@ public final class OverHeadSubtitles {
 		// The Y axis is flipped by the scale above, so the first row is drawn
 		// highest by starting at the negative total height.
 		int top = -rows.size() * LINE_HEIGHT;
-		int background = ColorHelper.getArgb(
-				Math.round(MinecraftClient.getInstance().options.getTextBackgroundOpacity(0.25F) * alpha), 0, 0, 0);
+		int background = ColorHelper.getArgb(Math.round(backgroundOpacity * alpha), 0, 0, 0);
 
 		for (int i = 0; i < rows.size(); i++) {
 			OrderedText row = rows.get(i);

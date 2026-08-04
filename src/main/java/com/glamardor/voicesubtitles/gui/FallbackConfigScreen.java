@@ -103,11 +103,16 @@ public class FallbackConfigScreen extends Screen {
 		list.addWidget(percentSlider("background", config.backgroundOpacity, 0, 100, v -> config.backgroundOpacity = v));
 		list.addWidget(percentSlider("text_scale", config.textScalePercent, 50, 200, v -> config.textScalePercent = v));
 		list.addWidget(toggle("fade", () -> config.fade, v -> config.fade = v));
+		list.addWidget(millisSlider("fade_millis", config.fadeMillis, 0, 1000, v -> config.fadeMillis = v));
+		list.addWidget(toggle("typewriter", () -> config.typewriter, v -> config.typewriter = v));
+		list.addWidget(plainSlider("typewriter_speed", config.typewriterSpeed, 10, 400,
+				v -> config.typewriterSpeed = v));
 		list.addWidget(toggle("hide_with_hud", () -> config.hideWithHud, v -> config.hideWithHud = v));
 		list.addWidget(toggle("show_direction", () -> config.showDirection, v -> config.showDirection = v));
 
 		list.addHeader(category("log"));
 		list.addWidget(toggle("keep_log", () -> config.keepLog, v -> config.keepLog = v));
+		list.addWidget(toggle("log_chat", () -> config.logChat, v -> config.logChat = v));
 		list.addWidget(toggle("log_events", () -> config.logEvents, v -> config.logEvents = v));
 		list.addWidget(plainSlider("log_capacity", config.logCapacity, 50, 20000, v -> config.logCapacity = v));
 		list.addWidget(new OptionSlider("log_keep_days", config.logKeepDays, 0, 365,
@@ -123,6 +128,14 @@ public class FallbackConfigScreen extends Screen {
 		list.addWidget(pixelSlider("over_head_width", config.overHeadWidth, 60, 400, v -> config.overHeadWidth = v));
 		list.addWidget(toggle("over_head_walls", () -> config.overHeadThroughWalls,
 				v -> config.overHeadThroughWalls = v));
+		list.addWidget(percentSlider("over_head_scale", config.overHeadScalePercent, 50, 250,
+				v -> config.overHeadScalePercent = v));
+		list.addWidget(plainSlider("over_head_rows", config.overHeadMaxRows, 1, 10,
+				v -> config.overHeadMaxRows = v));
+		list.addWidget(percentSlider("over_head_background", config.overHeadBackground, 0, 100,
+				v -> config.overHeadBackground = v));
+		list.addWidget(toggle("over_head_name", () -> config.overHeadShowName,
+				v -> config.overHeadShowName = v));
 
 		addDrawableChild(list);
 

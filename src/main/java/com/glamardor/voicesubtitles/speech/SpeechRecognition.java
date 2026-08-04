@@ -428,6 +428,10 @@ public final class SpeechRecognition {
 					} catch (Throwable ignored) {
 					}
 				}
+				// Whatever happened, stop holding the line: a held line never
+				// expires, and one held by a dead worker would sit there forever.
+				SubtitleFeed.release(line);
+				line = null;
 				SESSIONS.remove(speaker, this);
 				try {
 					stream.close();
@@ -445,6 +449,7 @@ public final class SpeechRecognition {
 				lastSettled = finished;
 				if (finished.isBlank()) {
 					SubtitleFeed.close(line);
+					SubtitleFeed.release(line);
 				} else {
 					SubtitleFeed.setText(lineToWriteTo(), finished, true);
 				}
@@ -486,6 +491,7 @@ public final class SpeechRecognition {
 
 			if (text.isBlank()) {
 				SubtitleFeed.close(line);
+				SubtitleFeed.release(line);
 				line = null;
 				return;
 			}

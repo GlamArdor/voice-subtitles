@@ -93,7 +93,10 @@ public final class SubtitleLog {
 	 */
 	public static void record(SubtitleFeed.Line line) {
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
-		if (!cfg.keepLog || line.placeholder() || line.logged) {
+		// Chat lines are filed straight from the chat, whole and unattributed;
+		// filing them here as well would put every message in twice.
+		if (!cfg.keepLog || line.placeholder() || line.logged
+				|| line.source == SubtitleFeed.Source.CHAT) {
 			return;
 		}
 		line.logged = true;
@@ -109,6 +112,30 @@ public final class SubtitleLog {
 		}
 		// Written straight away rather than at shutdown: a game that crashes
 		// still ought to leave the conversation behind.
+		LogStore.append(entry);
+	}
+
+	/**
+	 * Files a line of chat exactly as it appeared.
+	 *
+	 * <p>Everything the chat window showed, not only what could be pinned to a
+	 * player: other people's commands, server announcements, the results of
+	 * roleplay actions. Kept whole, with whatever prefix the server put on it,
+	 * because in a record the wording is the evidence.
+	 */
+	public static void recordChat(Text message) {
+		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
+		if (!cfg.keepLog || !cfg.logChat || message == null) {
+			return;
+		}
+		String text = message.getString().trim();
+		if (text.isEmpty()) {
+			return;
+		}
+		Entry entry = new Entry(System.currentTimeMillis(), NOBODY, "", SubtitleFeed.Source.CHAT, text);
+		synchronized (ENTRIES) {
+			ENTRIES.add(entry);
+		}
 		LogStore.append(entry);
 	}
 

@@ -389,6 +389,17 @@ public class SubtitleLogScreen extends Screen {
 					}
 					continue;
 				}
+				if (entry.source() == SubtitleFeed.Source.CHAT && entry.name().isEmpty()) {
+					// Straight from the chat: no name of its own, so it is marked
+					// as chat instead of borrowing somebody's.
+					full = Text.literal(SubtitleLog.timeOf(entry) + " ").formatted(Formatting.DARK_GRAY)
+							.append(Text.literal("[CHAT] ").formatted(Formatting.DARK_AQUA))
+							.append(body(entry.text(), highlight));
+					for (OrderedText row : client.textRenderer.wrapLines(full, rowWidth)) {
+						rows.add(new Row(row));
+					}
+					continue;
+				}
 				int color = SpeakerColors.colorOf(entry.speaker());
 				full = Text.literal(SubtitleLog.timeOf(entry) + " ").formatted(Formatting.DARK_GRAY)
 						.append(Text.literal(entry.name()).styled(style -> style.withColor(color)))
@@ -419,6 +430,22 @@ public class SubtitleLogScreen extends Screen {
 				from = at + needle.length();
 			}
 			return out.append(Text.literal(text.substring(from)).formatted(Formatting.WHITE));
+		}
+
+		/**
+		 * Lets the list be pulled about with the mouse, not only nudged with the
+		 * wheel: a scrollbar six pixels wide is a poor thing to have to aim at.
+		 */
+		@Override
+		public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+			if (super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
+				return true;
+			}
+			if (button == 0) {
+				setScrollY(getScrollY() - deltaY);
+				return true;
+			}
+			return false;
 		}
 
 		void scrollToBottom() {

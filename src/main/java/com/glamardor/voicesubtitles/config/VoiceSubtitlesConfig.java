@@ -165,6 +165,14 @@ public class VoiceSubtitlesConfig {
 	 */
 	public boolean logEvents = true;
 	/**
+	 * Put the whole chat in the log, not only what a player can be pinned to.
+	 *
+	 * <p>Server announcements, other people's commands, the results of roleplay
+	 * actions: in a record, the things nobody said are as much part of the
+	 * evening as the things somebody did.
+	 */
+	public boolean logChat = true;
+	/**
 	 * How many days of conversation are kept on disk.
 	 *
 	 * <p>The log is written out as it happens so it survives closing the game,
@@ -192,6 +200,36 @@ public class VoiceSubtitlesConfig {
 	public int overHeadWidth = 170;
 	/** Draw the caption through walls, like the voice it belongs to. */
 	public boolean overHeadThroughWalls = true;
+	/** Text size above a head, in percent of the usual. */
+	public int overHeadScalePercent = 100;
+	/** How many wrapped rows a caption above a head may take. */
+	public int overHeadMaxRows = 4;
+	/** Darkness of the plate behind it, 0–100 %. */
+	public int overHeadBackground = 25;
+	/** Show the speaker's name above their head as well as their words. */
+	public boolean overHeadShowName = true;
+
+	// ── Motion ───────────────────────────────────────────────────────────────
+	/**
+	 * How long a caption takes to fade in and out, in milliseconds.
+	 *
+	 * <p>Captions used to appear and vanish between one frame and the next, which
+	 * reads as a flicker at the edge of vision rather than as something arriving.
+	 */
+	public int fadeMillis = 220;
+	/**
+	 * Let recognised text appear a few characters at a time rather than in whole
+	 * jumps, so a caption grows the way speech does.
+	 */
+	public boolean typewriter = true;
+	/**
+	 * How fast those characters appear, per second.
+	 *
+	 * <p>Fast enough that it never delays the words: it catches up to whatever
+	 * the recogniser has said within a fraction of a second, and if it ever falls
+	 * behind, the text is shown in full rather than kept waiting.
+	 */
+	public int typewriterSpeed = 90;
 
 	// ── Speech recognition ───────────────────────────────────────────────────
 	/** Turn recognised words into captions; off leaves only "who is talking". */
@@ -287,6 +325,11 @@ public class VoiceSubtitlesConfig {
 		overHeadWidth = clamp(overHeadWidth, 60, 400);
 		maxRecognizers = clamp(maxRecognizers, 1, 8);
 		logCapacity = clamp(logCapacity, 50, 20000);
+		overHeadScalePercent = clamp(overHeadScalePercent, 50, 250);
+		overHeadMaxRows = clamp(overHeadMaxRows, 1, 10);
+		overHeadBackground = clamp(overHeadBackground, 0, 100);
+		fadeMillis = clamp(fadeMillis, 0, 1000);
+		typewriterSpeed = clamp(typewriterSpeed, 10, 400);
 		logKeepDays = clamp(logKeepDays, 0, 365);
 		if (modelId == null) modelId = "";
 	}

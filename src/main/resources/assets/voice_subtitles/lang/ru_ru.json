@@ -189,5 +189,21 @@
 	"voice_subtitles.event.quit": "Выход из игры",
 	"voice_subtitles.event.death": "Смерть",
 	"voice_subtitles.event.command": "Команда: %s",
-	"voice_subtitles.log.tampered": "Файл журнала был изменён извне, часть записей не показана"
+	"voice_subtitles.log.tampered": "Файл журнала был изменён извне, часть записей не показана",
+	"voice_subtitles.option.fade_millis": "Длительность плавности",
+	"voice_subtitles.option.fade_millis.tooltip": "Сколько занимает появление реплики. Исчезновение примерно вдвое дольше: уходить не так спешно, как приходить.",
+	"voice_subtitles.option.typewriter": "Печатать текст",
+	"voice_subtitles.option.typewriter.tooltip": "Распознанное появляется по несколько символов, а не рывками целыми фразами. Речь при этом не задерживается: печать быстрее говорящего и при отставании показывает всё сразу.",
+	"voice_subtitles.option.typewriter_speed": "Скорость печати",
+	"voice_subtitles.option.typewriter_speed.tooltip": "Символов в секунду.",
+	"voice_subtitles.option.over_head_scale": "Размер текста над головой",
+	"voice_subtitles.option.over_head_scale.tooltip": "100 % — обычный размер.",
+	"voice_subtitles.option.over_head_rows": "Строк над головой",
+	"voice_subtitles.option.over_head_rows.tooltip": "Больше этого не показывается, видны последние строки. Иначе длинная речь растёт вниз до самой земли.",
+	"voice_subtitles.option.over_head_background": "Подложка над головой",
+	"voice_subtitles.option.over_head_background.tooltip": "Плотность тёмной плашки за текстом.",
+	"voice_subtitles.option.over_head_name": "Имя над головой",
+	"voice_subtitles.option.over_head_name.tooltip": "Показывать имя говорящего перед его словами.",
+	"voice_subtitles.option.log_chat": "Записывать весь чат",
+	"voice_subtitles.option.log_chat.tooltip": "Класть в журнал всё, что показал чат: объявления сервера, чужие команды, результаты отыгрыша. Такие строки помечаются [CHAT]."
 }

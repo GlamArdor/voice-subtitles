@@ -59,13 +59,19 @@ public final class SubtitleFeed {
 		/** When the utterance ended, or 0 while it is still going. */
 		volatile long closedAt;
 		/**
-		 * Set once this line has gone into the log.
-		 *
-		 * <p>A line can leave the feed and come back: the recogniser holds on to
-		 * it while it works, and writing to one that has already expired puts it
-		 * back. Without this it would then be filed a second time.
+		 * Set once this line has gone into the log, so it goes there once only.
 		 */
 		volatile boolean logged;
+		/**
+		 * True while a recogniser is still working on this line.
+		 *
+		 * <p>Held lines are not thrown away, however long they sit there. A long
+		 * utterance takes seconds to decode in full, and without this the line
+		 * expired first, went into the log carrying the half of the sentence it
+		 * had at that moment, and the finished text arrived to find it already
+		 * filed. The story ended after three lines and the rest was simply gone.
+		 */
+		volatile boolean held;
 
 		Line(UUID speaker, Source source, long now) {
 			this.speaker = speaker;
@@ -159,12 +165,21 @@ public final class SubtitleFeed {
 	public static Line openOrCreate(UUID speaker) {
 		Line open = openLineOf(speaker);
 		if (open != null) {
+			open.held = true;
 			return open;
 		}
 		Line line = new Line(speaker, Source.VOICE, System.currentTimeMillis());
+		line.held = true;
 		LINES.add(line);
 		trim();
 		return line;
+	}
+
+	/** The recogniser has finished with this line; it may now expire and be filed. */
+	public static void release(Line line) {
+		if (line != null) {
+			line.held = false;
+		}
 	}
 
 	/**
@@ -194,6 +209,7 @@ public final class SubtitleFeed {
 		line.lastAudioAt = now;
 		if (finalText) {
 			line.closedAt = now;
+			line.held = false;
 		}
 	}
 
@@ -223,7 +239,8 @@ public final class SubtitleFeed {
 				line.closedAt = now;
 				line.partial = false;
 			}
-			if (!line.open() && now - line.closedAt > Captions.lifetimeOf(line)) {
+			// A line still being worked on stays, however long it has been closed.
+			if (!line.open() && !line.held && now - line.closedAt > Captions.lifetimeOf(line)) {
 				retire(line);
 			}
 		}
@@ -285,8 +302,12 @@ public final class SubtitleFeed {
 	/** Keeps the backing list from growing without bound. */
 	private static void trim() {
 		int keep = Math.max(VoiceSubtitlesConfig.get().maxLines * 3, 12);
-		while (LINES.size() > keep) {
-			retire(LINES.get(0));
+		for (int i = 0; i < LINES.size() && LINES.size() > keep; i++) {
+			Line oldest = LINES.get(i);
+			if (!oldest.held) {
+				retire(oldest);
+				i--;
+			}
 		}
 	}
 
