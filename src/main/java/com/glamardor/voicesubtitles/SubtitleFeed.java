@@ -168,6 +168,12 @@ public final class SubtitleFeed {
 			return;
 		}
 		long now = System.currentTimeMillis();
+		if (!LINES.contains(line)) {
+			// Gone from the feed while the recogniser was still working on it:
+			// put it back rather than losing the sentence it was holding.
+			LINES.add(line);
+			trim();
+		}
 		if (!line.open()) {
 			// Reopened: the recogniser is still refining a sentence it had
 			// already settled once.

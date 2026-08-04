@@ -203,7 +203,7 @@ public final class SpeechRecognition {
 		}
 		String language = options.language; // e.g. "ru_ru"
 		String code = language == null ? "en" : language.split("_")[0];
-		String chosen = SpeechModels.byId(code) != null ? code : "en";
+		String chosen = SpeechModels.byId(code) != null ? SpeechModels.defaultFor(code) : "en";
 
 		cfg.modelId = chosen;
 		VoiceSubtitlesConfig.save();
@@ -457,9 +457,18 @@ public final class SpeechRecognition {
 			}
 		}
 
-		/** This utterance's line, adopting the one the feed opened for the audio. */
+		/**
+		 * This utterance's line, adopting the one the feed opened for the audio.
+		 *
+		 * <p>Kept even after the feed has closed it, which is the whole point.
+		 * An utterance ends after 650 ms of silence, but decoding it in full
+		 * takes seconds for a long one, and the feed closes a line after 900 ms
+		 * without audio. So by the time the finished sentence arrives its line is
+		 * usually shut, and treating that as "no line" is what put the sentence
+		 * in a second caption beside the running one. Writing to it reopens it.
+		 */
 		private SubtitleFeed.Line lineToWriteTo() {
-			if (line == null || !line.open()) {
+			if (line == null) {
 				line = SubtitleFeed.openOrCreate(speaker);
 			}
 			return line;

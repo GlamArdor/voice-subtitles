@@ -51,7 +51,7 @@
 	"voice_subtitles.option.speech_enabled.tooltip": "Выключено – субтитры показывают только, кто говорит, без слов.",
 	"voice_subtitles.option.model_id": "Модель",
 	"voice_subtitles.option.model_id.tooltip": "Код языка: ru, en, uk, de, fr, es, pl, it, ja. Пусто – по языку игры. Полный список: /vsub model list.",
-	"voice_subtitles.option.auto_download": "Скачивать модель сама",
+	"voice_subtitles.option.auto_download": "Скачивать модель автоматически",
 	"voice_subtitles.option.auto_download.tooltip": "При первом запуске подтягивает модель под язык игры. Иначе – /vsub model download.",
 	"voice_subtitles.option.show_partial": "Показывать на лету",
 	"voice_subtitles.option.show_partial.tooltip": "Слова появляются по мере распознавания, ещё до конца фразы.",
@@ -173,5 +173,6 @@
 	"voice_subtitles.log.filter.order": "Порядок: %s",
 	"voice_subtitles.log.filter.newest": "новые сверху",
 	"voice_subtitles.log.filter.oldest": "старые сверху",
-	"voice_subtitles.time.hours": "%s ч"
+	"voice_subtitles.time.hours": "%s ч",
+	"voice_subtitles.time.days": "%s сут"
 }

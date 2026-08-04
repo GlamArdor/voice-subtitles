@@ -113,6 +113,23 @@ public final class SpeechModels {
 		return CATALOGUE.get(id);
 	}
 
+	/**
+	 * The model to start with for a language, before anybody has chosen one.
+	 *
+	 * <p>Russian gets GigaAM rather than the plain Vosk model it shares a name
+	 * with: it is the most accurate of the lot, it writes punctuation and
+	 * capitals, and it is ready a second after it is asked for. It costs a
+	 * larger first download, which is a fair trade for the one thing the mod
+	 * exists to do well.
+	 */
+	public static String defaultFor(String languageCode) {
+		String preferred = switch (languageCode) {
+			case "ru" -> "ru-giga-rnnt";
+			default -> languageCode;
+		};
+		return CATALOGUE.containsKey(preferred) ? preferred : languageCode;
+	}
+
 	/** Where models are unpacked: {@code config/voice_subtitles/models}. */
 	public static Path modelsDirectory() {
 		return FabricLoader.getInstance().getConfigDir().resolve("voice_subtitles").resolve("models");

@@ -48,7 +48,7 @@ public class SubtitleLogScreen extends Screen {
 	private static final int MARGIN = 8;
 
 	/** Windows offered by the time filter, in minutes; 0 means everything. */
-	private static final int[] WINDOWS = {0, 5, 15, 60, 180, 720};
+	private static final int[] WINDOWS = {0, 5, 15, 60, 180, 720, 1440, 2880};
 
 	@Nullable
 	private final Screen parent;
@@ -74,10 +74,14 @@ public class SubtitleLogScreen extends Screen {
 	@Override
 	protected void init() {
 		int listWidth = this.width - PANEL_WIDTH - MARGIN * 3;
-		int top = 54;
+		// Title, then the disclaimer, then the search box, then the list: each
+		// with room of its own, since the first two are drawn rather than laid
+		// out and will happily sit on top of a widget that assumes otherwise.
+		int searchY = 40;
+		int top = searchY + 24;
 		int listHeight = this.height - top - 56;
 
-		search = new TextFieldWidget(this.textRenderer, MARGIN, top - 22, listWidth, 18,
+		search = new TextFieldWidget(this.textRenderer, MARGIN, searchY, listWidth, 18,
 				Text.translatable("voice_subtitles.log.search"));
 		search.setMaxLength(80);
 		search.setText(query);
@@ -180,11 +184,16 @@ public class SubtitleLogScreen extends Screen {
 
 	private Text windowLabel() {
 		int minutes = WINDOWS[windowIndex];
-		Text value = minutes == 0
-				? Text.translatable("voice_subtitles.log.filter.always")
-				: minutes < 60
-						? Text.translatable("voice_subtitles.time.minutes", minutes)
-						: Text.translatable("voice_subtitles.time.hours", minutes / 60);
+		Text value;
+		if (minutes == 0) {
+			value = Text.translatable("voice_subtitles.log.filter.always");
+		} else if (minutes < 60) {
+			value = Text.translatable("voice_subtitles.time.minutes", minutes);
+		} else if (minutes < 1440) {
+			value = Text.translatable("voice_subtitles.time.hours", minutes / 60);
+		} else {
+			value = Text.translatable("voice_subtitles.time.days", minutes / 1440);
+		}
 		return Text.translatable("voice_subtitles.log.filter.window", value);
 	}
 
@@ -290,10 +299,10 @@ public class SubtitleLogScreen extends Screen {
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 		super.render(context, mouseX, mouseY, delta);
-		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 12, 0xFFFFFFFF);
+		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 10, 0xFFFFFFFF);
 		// Said once, up front: half of this came out of a recogniser.
 		context.drawCenteredTextWithShadow(this.textRenderer,
-				Text.translatable("voice_subtitles.log.disclaimer"), this.width / 2, 26, 0xFF9A9A9A);
+				Text.translatable("voice_subtitles.log.disclaimer"), this.width / 2, 24, 0xFF9A9A9A);
 		if (!status.getString().isEmpty()) {
 			context.drawCenteredTextWithShadow(this.textRenderer, status, this.width / 2, this.height - 44, 0xFFFFFFFF);
 		}

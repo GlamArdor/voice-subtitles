@@ -173,5 +173,6 @@
 	"voice_subtitles.log.filter.order": "Order: %s",
 	"voice_subtitles.log.filter.newest": "newest first",
 	"voice_subtitles.log.filter.oldest": "oldest first",
-	"voice_subtitles.time.hours": "%s h"
+	"voice_subtitles.time.hours": "%s h",
+	"voice_subtitles.time.days": "%s d"
 }
