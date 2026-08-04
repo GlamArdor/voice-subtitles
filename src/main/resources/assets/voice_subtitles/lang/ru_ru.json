@@ -26,7 +26,7 @@
 	"voice_subtitles.log.clear": "Очистить",
 	"voice_subtitles.log.cleared": "Журнал очищен",
 	"voice_subtitles.log.empty": "Записывать пока нечего",
-	"voice_subtitles.log.exported": "Сохранено: config/voice_subtitles/logs/%s",
+	"voice_subtitles.log.exported": "Сохранено: %s — открыть папку",
 	"voice_subtitles.log.export_failed": "Не удалось сохранить файл – подробности в логе игры",
 	"voice_subtitles.log.hint": "Журнал живёт в памяти игры и открывается командой /vsub log или горячей клавишей. Реплики из голосового чата распознаны автоматически, поэтому журнал – напоминание о разговоре, а не его стенограмма; сообщения из текстового чата помечены [chat] и точны.",
 	"voice_subtitles.option.enabled": "Включено",
@@ -187,5 +187,7 @@
 	"voice_subtitles.event.join": "Зашёл на сервер: %s",
 	"voice_subtitles.event.leave": "Вышел с сервера: %s",
 	"voice_subtitles.event.quit": "Выход из игры",
-	"voice_subtitles.event.death": "Смерть"
+	"voice_subtitles.event.death": "Смерть",
+	"voice_subtitles.event.command": "Команда: %s",
+	"voice_subtitles.log.tampered": "Файл журнала был изменён извне, часть записей не показана"
 }

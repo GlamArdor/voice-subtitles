@@ -26,7 +26,7 @@
 	"voice_subtitles.log.clear": "Clear",
 	"voice_subtitles.log.cleared": "Log cleared",
 	"voice_subtitles.log.empty": "Nothing to save yet",
-	"voice_subtitles.log.exported": "Saved to config/voice_subtitles/logs/%s",
+	"voice_subtitles.log.exported": "Saved: %s – open the folder",
 	"voice_subtitles.log.export_failed": "Could not write the file – see the game log",
 	"voice_subtitles.log.hint": "The log lives in memory and opens with /vsub log or a key of your choosing. Spoken lines come from automatic recognition, so it is a reminder of a conversation rather than a transcript of it; text chat lines are marked [chat] and are exact.",
 	"voice_subtitles.option.enabled": "Enabled",
@@ -187,5 +187,7 @@
 	"voice_subtitles.event.join": "Joined: %s",
 	"voice_subtitles.event.leave": "Left: %s",
 	"voice_subtitles.event.quit": "Closed the game",
-	"voice_subtitles.event.death": "Died"
+	"voice_subtitles.event.death": "Died",
+	"voice_subtitles.event.command": "Command: %s",
+	"voice_subtitles.log.tampered": "The log file was altered outside the game; some entries are not shown"
 }

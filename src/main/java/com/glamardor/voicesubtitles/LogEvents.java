@@ -4,12 +4,16 @@ import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DeathScreen;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableTextContent;
+
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * The things that happen around a conversation, filed alongside it.
@@ -23,6 +27,14 @@ public final class LogEvents {
 
 	/** Two deaths cannot happen this close together, so the second one is an echo. */
 	private static final long DEATH_ECHO_MS = 3000L;
+
+	/** Roleplay commands worth keeping: an action is as much a line as a spoken one. */
+	private static final Set<String> ROLEPLAY = Set.of("me", "try", "do", "todo", "ame", "ado");
+
+	/** How long after such a command the server's answer is taken to be its result. */
+	private static final long RESULT_WINDOW_MS = 3000L;
+
+	private static long lastRoleplayAt;
 
 	private static long lastDeathAt;
 	private static boolean sawDeathScreen;
@@ -58,9 +70,30 @@ public final class LogEvents {
 		// the game is in. A server writing its own death messages will not match,
 		// and then only the player's own death is noticed, below.
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
-			if (!overlay && isDeathMessage(message)) {
+			if (overlay) {
+				return;
+			}
+			if (isDeathMessage(message)) {
 				lastDeathAt = System.currentTimeMillis();
 				SubtitleLog.recordEvent(message.copy());
+				return;
+			}
+			// What the server made of a roleplay command. Only when nobody can be
+			// pinned to it, since an attributable line is already filed as speech
+			// and would otherwise land in the log twice.
+			if (System.currentTimeMillis() - lastRoleplayAt < RESULT_WINDOW_MS
+					&& ChatSubtitles.findAuthor(message) == null
+					&& !message.getString().isBlank()) {
+				SubtitleLog.recordEvent(message.copy());
+			}
+		});
+
+		// The command as it was typed. Reliable, unlike guessing from the reply.
+		ClientSendMessageEvents.COMMAND.register(command -> {
+			String name = command.split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
+			if (ROLEPLAY.contains(name)) {
+				lastRoleplayAt = System.currentTimeMillis();
+				SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.command", "/" + command));
 			}
 		});
 

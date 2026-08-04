@@ -42,6 +42,7 @@ public final class SubtitleLog {
 	public static void init() {
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
 		LogStore.prune(cfg.logKeepDays);
+		LogStore.resumeChain();
 		if (!cfg.keepLog) {
 			return;
 		}
@@ -92,9 +93,10 @@ public final class SubtitleLog {
 	 */
 	public static void record(SubtitleFeed.Line line) {
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
-		if (!cfg.keepLog || line.placeholder()) {
+		if (!cfg.keepLog || line.placeholder() || line.logged) {
 			return;
 		}
+		line.logged = true;
 		Entry entry = new Entry(line.startedAt(), line.speaker,
 				NameResolver.nameOf(line.speaker).getString(), line.source, line.text());
 
@@ -110,10 +112,18 @@ public final class SubtitleLog {
 		LogStore.append(entry);
 	}
 
-	/** @return every entry, oldest first. */
+	/**
+	 * @return every entry, oldest first
+	 *
+	 * <p>Sorted by when the line was spoken rather than by when it happened to
+	 * be filed. A long utterance is filed only once it has finished, by which
+	 * time shorter ones that started after it have come and gone.
+	 */
 	public static List<Entry> entries() {
 		synchronized (ENTRIES) {
-			return new ArrayList<>(ENTRIES);
+			List<Entry> copy = new ArrayList<>(ENTRIES);
+			copy.sort(java.util.Comparator.comparingLong(Entry::time));
+			return copy;
 		}
 	}
 
@@ -130,6 +140,11 @@ public final class SubtitleLog {
 	/** Gives the writer a moment to catch up, for use when the game is closing. */
 	public static void flush() {
 		LogStore.flush();
+	}
+
+	/** True when a day file was found altered since it was written. */
+	public static boolean wasTampered() {
+		return LogStore.wasTampered();
 	}
 
 	/** @return the time of day an entry was spoken, {@code HH:mm:ss}. */

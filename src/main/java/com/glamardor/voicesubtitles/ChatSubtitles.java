@@ -160,7 +160,7 @@ public final class ChatSubtitles {
 	 * server tags the name it prints at the front of the line, so the author
 	 * comes before anybody the message happens to mention.
 	 */
-	private static UUID findAuthor(Text node) {
+	static UUID findAuthor(Text node) {
 		if (node.getStyle().getHoverEvent() instanceof HoverEvent.ShowEntity show && isPlayer(show.entity().uuid)) {
 			return show.entity().uuid;
 		}

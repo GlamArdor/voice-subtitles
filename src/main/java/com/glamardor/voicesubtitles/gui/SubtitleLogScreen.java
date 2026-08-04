@@ -67,6 +67,12 @@ public class SubtitleLogScreen extends Screen {
 	private boolean newestFirst;
 	/** Set by the first press of "clear"; the second one actually does it. */
 	private boolean clearArmed;
+	/** The file the last export produced, which the status line then points at. */
+	private Path exported;
+	/** Where that status line was drawn, so a click on it can be noticed. */
+	private int statusLeft;
+	private int statusRight;
+	private int statusTop;
 
 	public SubtitleLogScreen(@Nullable Screen parent) {
 		super(Text.translatable("voice_subtitles.log.title"));
@@ -128,6 +134,9 @@ public class SubtitleLogScreen extends Screen {
 		addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, b -> close())
 				.dimensions(x + (buttonWidth + spacing) * 2, y, buttonWidth, 20).build());
 
+		if (SubtitleLog.wasTampered()) {
+			status = Text.translatable("voice_subtitles.log.tampered").formatted(Formatting.RED);
+		}
 		rebuild();
 	}
 
@@ -289,6 +298,9 @@ public class SubtitleLogScreen extends Screen {
 		if (!newestFirst) {
 			list.scrollToBottom();
 		}
+		if (SubtitleLog.wasTampered()) {
+			return;
+		}
 		int total = SubtitleLog.size();
 		status = entries.size() == total
 				? Text.translatable("voice_subtitles.log.count", total)
@@ -305,8 +317,10 @@ public class SubtitleLogScreen extends Screen {
 			// Whatever the filters are showing is what gets written: seeing the
 			// file differ from the screen would be its own small betrayal.
 			Path file = SubtitleLog.export(entries);
+			exported = file;
+			// Underlined, because it can be clicked and nothing else here can.
 			status = Text.translatable("voice_subtitles.log.exported", file.getFileName().toString())
-					.formatted(Formatting.GREEN);
+					.formatted(Formatting.GREEN, Formatting.UNDERLINE);
 		} catch (IOException e) {
 			VoiceSubtitles.LOGGER.warn("could not export the conversation log", e);
 			status = Text.translatable("voice_subtitles.log.export_failed").formatted(Formatting.RED);
@@ -321,8 +335,23 @@ public class SubtitleLogScreen extends Screen {
 		context.drawCenteredTextWithShadow(this.textRenderer,
 				Text.translatable("voice_subtitles.log.disclaimer"), this.width / 2, 24, 0xFF9A9A9A);
 		if (!status.getString().isEmpty()) {
-			context.drawCenteredTextWithShadow(this.textRenderer, status, this.width / 2, this.height - 44, 0xFFFFFFFF);
+			int width = this.textRenderer.getWidth(status);
+			statusLeft = this.width / 2 - width / 2;
+			statusRight = statusLeft + width;
+			statusTop = this.height - 44;
+			context.drawCenteredTextWithShadow(this.textRenderer, status, this.width / 2, statusTop, 0xFFFFFFFF);
 		}
+	}
+
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		if (exported != null && button == 0
+				&& mouseX >= statusLeft && mouseX <= statusRight
+				&& mouseY >= statusTop && mouseY <= statusTop + 9) {
+			Reveal.inFileManager(exported);
+			return true;
+		}
+		return super.mouseClicked(mouseX, mouseY, button);
 	}
 
 	@Override

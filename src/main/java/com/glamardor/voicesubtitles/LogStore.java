@@ -41,6 +41,10 @@ final class LogStore {
 
 	private static final BlockingQueue<SubtitleLog.Entry> PENDING = new LinkedBlockingQueue<>();
 	private static volatile Thread writer;
+	/** Fingerprint of the last line written, which the next one commits to. */
+	private static String lastFingerprint = "";
+	/** True once a file has been found with its chain broken. */
+	private static volatile boolean tampered;
 
 	private LogStore() {
 	}
@@ -91,6 +95,16 @@ final class LogStore {
 		}
 	}
 
+	/** Seals a line, falling back to plain text if the ciphers are unavailable. */
+	private static LogSeal.Sealed seal(String plain) {
+		try {
+			return LogSeal.seal(directory(), plain, lastFingerprint);
+		} catch (Exception e) {
+			VoiceSubtitles.LOGGER.warn("Could not seal the log line; writing it plainly", e);
+			return new LogSeal.Sealed(plain, "");
+		}
+	}
+
 	private static void write(List<SubtitleLog.Entry> batch) throws IOException {
 		Files.createDirectories(directory());
 		// Grouped by day, because a conversation running past midnight belongs to
@@ -108,8 +122,10 @@ final class LogStore {
 							StandardOpenOption.CREATE, StandardOpenOption.APPEND);
 					current = file;
 				}
-				out.write(encode(entry));
+				LogSeal.Sealed sealed = seal(encode(entry));
+				out.write(sealed.line());
 				out.newLine();
+				lastFingerprint = sealed.fingerprint();
 			}
 		} finally {
 			if (out != null) {
@@ -145,8 +161,32 @@ final class LogStore {
 			}
 			List<SubtitleLog.Entry> ofDay = new ArrayList<>();
 			try {
+				String expected = "";
 				for (String line : Files.readAllLines(day, StandardCharsets.UTF_8)) {
-					SubtitleLog.Entry entry = decode(line);
+					if (line.isBlank()) {
+						continue;
+					}
+					String plain = line;
+					if (LogSeal.isSealed(line)) {
+						LogSeal.Opened opened = LogSeal.open(directory(), line);
+						if (opened == null) {
+							markTampered(day, "a line will not open");
+							break;
+						}
+						// Each line names the one before it. A line removed,
+						// reordered or rewritten breaks that, and everything from
+						// there on is no longer what was originally written.
+						// An empty link means a session started here, which is
+						// ordinary: the chain restarts every time the game does.
+						if (!expected.isEmpty() && !opened.previous().isEmpty()
+								&& !expected.equals(opened.previous())) {
+							markTampered(day, "the chain is broken");
+							break;
+						}
+						expected = opened.fingerprint();
+						plain = opened.plain();
+					}
+					SubtitleLog.Entry entry = decode(plain);
 					if (entry != null) {
 						ofDay.add(entry);
 					}
@@ -163,6 +203,44 @@ final class LogStore {
 			collected.addAll(0, ofDay);
 		}
 		return collected;
+	}
+
+	private static void markTampered(Path day, String why) {
+		tampered = true;
+		VoiceSubtitles.LOGGER.warn("Conversation log {} was altered ({}); the rest of that day is not shown",
+				day.getFileName(), why);
+	}
+
+	/**
+	 * Picks the chain up where the last session left it, so today's file carries
+	 * on as one sequence rather than restarting at every launch.
+	 */
+	static void resumeChain() {
+		Path today = fileFor(System.currentTimeMillis());
+		if (!Files.isRegularFile(today)) {
+			return;
+		}
+		try {
+			String last = null;
+			for (String line : Files.readAllLines(today, StandardCharsets.UTF_8)) {
+				if (!line.isBlank()) {
+					last = line;
+				}
+			}
+			if (last != null && LogSeal.isSealed(last)) {
+				LogSeal.Opened opened = LogSeal.open(directory(), last);
+				if (opened != null) {
+					lastFingerprint = opened.fingerprint();
+				}
+			}
+		} catch (Exception e) {
+			VoiceSubtitles.LOGGER.warn("Could not read where the log left off", e);
+		}
+	}
+
+	/** True when a day file was found altered since it was written. */
+	static boolean wasTampered() {
+		return tampered;
 	}
 
 	/** Deletes day files older than {@code keepDays}. */

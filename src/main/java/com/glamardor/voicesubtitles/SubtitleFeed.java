@@ -58,6 +58,14 @@ public final class SubtitleFeed {
 		volatile long lastAudioAt;
 		/** When the utterance ended, or 0 while it is still going. */
 		volatile long closedAt;
+		/**
+		 * Set once this line has gone into the log.
+		 *
+		 * <p>A line can leave the feed and come back: the recogniser holds on to
+		 * it while it works, and writing to one that has already expired puts it
+		 * back. Without this it would then be filed a second time.
+		 */
+		volatile boolean logged;
 
 		Line(UUID speaker, Source source, long now) {
 			this.speaker = speaker;
