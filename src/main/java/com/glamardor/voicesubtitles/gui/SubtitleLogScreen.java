@@ -9,8 +9,10 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ElementListWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.screen.ScreenTexts;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.OrderedText;
@@ -20,22 +22,49 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 /**
- * What has been said so far, in one scrollable list.
+ * What has been said so far, with a way to find any of it again.
+ *
+ * <p>Scrolling is fine for the last few minutes and useless for an evening of
+ * roleplay, so the list is filtered rather than merely shown: text to look for
+ * along the top, and everything else down the right side. The filters are all
+ * on one screen and always visible, because a filter you have to go looking for
+ * is a filter nobody uses.
  *
  * <p>Unlike the settings screen this one keeps the vanilla backdrop: it is here
  * to be read, and reading a wall of text over a moving world is unkind.
  */
 public class SubtitleLogScreen extends Screen {
 
-	private static final int ROW_WIDTH = 340;
 	private static final int ROW_HEIGHT = 11;
+	private static final int PANEL_WIDTH = 128;
+	private static final int MARGIN = 8;
+
+	/** Windows offered by the time filter, in minutes; 0 means everything. */
+	private static final int[] WINDOWS = {0, 5, 15, 60, 180, 720};
 
 	@Nullable
 	private final Screen parent;
+
+	private LogList list;
+	private TextFieldWidget search;
 	private Text status = Text.empty();
+
+	// ── the filters ─────────────────────────────────────────────────────────
+	private String query = "";
+	/** Whose lines to show, or {@code null} for everybody. */
+	private UUID speaker;
+	/** Which kind to show, or {@code null} for both. */
+	private SubtitleFeed.Source source;
+	private int windowIndex;
+	private boolean newestFirst;
 
 	public SubtitleLogScreen(@Nullable Screen parent) {
 		super(Text.translatable("voice_subtitles.log.title"));
@@ -44,37 +73,212 @@ public class SubtitleLogScreen extends Screen {
 
 	@Override
 	protected void init() {
-		LogList list = new LogList(this.client, this.width, this.height - 92, 44);
-		for (SubtitleLog.Entry entry : SubtitleLog.entries()) {
-			list.addEntry(entry);
-		}
-		list.scrollToBottom();
+		int listWidth = this.width - PANEL_WIDTH - MARGIN * 3;
+		int top = 54;
+		int listHeight = this.height - top - 56;
+
+		search = new TextFieldWidget(this.textRenderer, MARGIN, top - 22, listWidth, 18,
+				Text.translatable("voice_subtitles.log.search"));
+		search.setMaxLength(80);
+		search.setText(query);
+		search.setPlaceholder(Text.translatable("voice_subtitles.log.search").formatted(Formatting.DARK_GRAY));
+		search.setChangedListener(value -> {
+			query = value;
+			rebuild();
+		});
+		addDrawableChild(search);
+		setInitialFocus(search);
+
+		list = new LogList(this.client, listWidth, listHeight, top);
+		list.setX(MARGIN);
 		addDrawableChild(list);
+
+		buildPanel(top, listHeight);
 
 		int buttonWidth = 100;
 		int spacing = 4;
-		int totalWidth = buttonWidth * 3 + spacing * 2;
-		int x = (this.width - totalWidth) / 2;
+		int total = buttonWidth * 3 + spacing * 2;
+		int x = (this.width - total) / 2;
 		int y = this.height - 30;
 
-		addDrawableChild(ButtonWidget.builder(Text.translatable("voice_subtitles.log.export"), button -> export())
-				.dimensions(x, y, buttonWidth, 20).build());
-		addDrawableChild(ButtonWidget.builder(Text.translatable("voice_subtitles.log.clear"), button -> {
+		ButtonWidget export = ButtonWidget.builder(Text.translatable("voice_subtitles.log.export"), b -> export())
+				.dimensions(x, y, buttonWidth, 20).build();
+		export.setTooltip(Tooltip.of(Text.translatable("voice_subtitles.log.export.tooltip")));
+		addDrawableChild(export);
+
+		addDrawableChild(ButtonWidget.builder(Text.translatable("voice_subtitles.log.clear"), b -> {
 			SubtitleLog.clear();
 			status = Text.translatable("voice_subtitles.log.cleared").formatted(Formatting.GRAY);
 			clearAndInit();
 		}).dimensions(x + buttonWidth + spacing, y, buttonWidth, 20).build());
-		addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, button -> close())
+
+		addDrawableChild(ButtonWidget.builder(ScreenTexts.DONE, b -> close())
 				.dimensions(x + (buttonWidth + spacing) * 2, y, buttonWidth, 20).build());
+
+		rebuild();
+	}
+
+	/** The filter column down the right side. */
+	private void buildPanel(int top, int listHeight) {
+		int x = this.width - PANEL_WIDTH - MARGIN;
+		int y = top;
+		int gap = 22;
+
+		addDrawableChild(ButtonWidget.builder(speakerLabel(), b -> {
+			cycleSpeaker();
+			b.setMessage(speakerLabel());
+			rebuild();
+		}).dimensions(x, y, PANEL_WIDTH, 20).build());
+		y += gap;
+
+		addDrawableChild(ButtonWidget.builder(sourceLabel(), b -> {
+			source = source == null ? SubtitleFeed.Source.VOICE
+					: source == SubtitleFeed.Source.VOICE ? SubtitleFeed.Source.CHAT : null;
+			b.setMessage(sourceLabel());
+			rebuild();
+		}).dimensions(x, y, PANEL_WIDTH, 20).build());
+		y += gap;
+
+		addDrawableChild(ButtonWidget.builder(windowLabel(), b -> {
+			windowIndex = (windowIndex + 1) % WINDOWS.length;
+			b.setMessage(windowLabel());
+			rebuild();
+		}).dimensions(x, y, PANEL_WIDTH, 20).build());
+		y += gap;
+
+		addDrawableChild(ButtonWidget.builder(orderLabel(), b -> {
+			newestFirst = !newestFirst;
+			b.setMessage(orderLabel());
+			rebuild();
+		}).dimensions(x, y, PANEL_WIDTH, 20).build());
+		y += gap + 4;
+
+		addDrawableChild(ButtonWidget.builder(Text.translatable("voice_subtitles.log.filters.reset"), b -> {
+			query = "";
+			speaker = null;
+			source = null;
+			windowIndex = 0;
+			newestFirst = false;
+			clearAndInit();
+		}).dimensions(x, y, PANEL_WIDTH, 20).build());
+	}
+
+	// ── filter labels ───────────────────────────────────────────────────────
+
+	private Text speakerLabel() {
+		Text who = speaker == null
+				? Text.translatable("voice_subtitles.log.filter.everyone")
+				: Text.literal(shorten(nameOf(speaker), 14));
+		return Text.translatable("voice_subtitles.log.filter.speaker", who);
+	}
+
+	private Text sourceLabel() {
+		String key = source == null ? "any" : source == SubtitleFeed.Source.VOICE ? "voice" : "chat";
+		return Text.translatable("voice_subtitles.log.filter.source",
+				Text.translatable("voice_subtitles.log.filter.source." + key));
+	}
+
+	private Text windowLabel() {
+		int minutes = WINDOWS[windowIndex];
+		Text value = minutes == 0
+				? Text.translatable("voice_subtitles.log.filter.always")
+				: minutes < 60
+						? Text.translatable("voice_subtitles.time.minutes", minutes)
+						: Text.translatable("voice_subtitles.time.hours", minutes / 60);
+		return Text.translatable("voice_subtitles.log.filter.window", value);
+	}
+
+	private Text orderLabel() {
+		return Text.translatable("voice_subtitles.log.filter.order",
+				Text.translatable(newestFirst ? "voice_subtitles.log.filter.newest" : "voice_subtitles.log.filter.oldest"));
+	}
+
+	/** Walks through everybody who has actually said something, then back to all. */
+	private void cycleSpeaker() {
+		List<UUID> speakers = new ArrayList<>(speakers().keySet());
+		if (speakers.isEmpty()) {
+			speaker = null;
+			return;
+		}
+		int at = speaker == null ? -1 : speakers.indexOf(speaker);
+		speaker = at + 1 >= speakers.size() ? null : speakers.get(at + 1);
+	}
+
+	/** Everybody in the log, by first appearance, with the name they had then. */
+	private Map<UUID, String> speakers() {
+		Map<UUID, String> found = new LinkedHashMap<>();
+		for (SubtitleLog.Entry entry : SubtitleLog.entries()) {
+			found.putIfAbsent(entry.speaker(), entry.name());
+		}
+		return found;
+	}
+
+	private String nameOf(UUID id) {
+		return speakers().getOrDefault(id, id.toString().substring(0, 8));
+	}
+
+	private static String shorten(String text, int limit) {
+		return text.length() <= limit ? text : text.substring(0, limit - 1) + "…";
+	}
+
+	// ── the list itself ─────────────────────────────────────────────────────
+
+	/** @return the entries that pass every filter, in the chosen order */
+	private List<SubtitleLog.Entry> filtered() {
+		String needle = query.trim().toLowerCase(Locale.ROOT);
+		long since = WINDOWS[windowIndex] == 0
+				? Long.MIN_VALUE
+				: System.currentTimeMillis() - WINDOWS[windowIndex] * 60_000L;
+
+		List<SubtitleLog.Entry> out = new ArrayList<>();
+		for (SubtitleLog.Entry entry : SubtitleLog.entries()) {
+			if (speaker != null && !speaker.equals(entry.speaker())) {
+				continue;
+			}
+			if (source != null && entry.source() != source) {
+				continue;
+			}
+			if (entry.time() < since) {
+				continue;
+			}
+			if (!needle.isEmpty()
+					&& !entry.text().toLowerCase(Locale.ROOT).contains(needle)
+					&& !entry.name().toLowerCase(Locale.ROOT).contains(needle)) {
+				continue;
+			}
+			out.add(entry);
+		}
+		if (newestFirst) {
+			java.util.Collections.reverse(out);
+		}
+		return out;
+	}
+
+	private void rebuild() {
+		if (list == null) {
+			return;
+		}
+		List<SubtitleLog.Entry> entries = filtered();
+		list.show(entries, query.trim());
+		if (!newestFirst) {
+			list.scrollToBottom();
+		}
+		int total = SubtitleLog.size();
+		status = entries.size() == total
+				? Text.translatable("voice_subtitles.log.count", total)
+				: Text.translatable("voice_subtitles.log.count.filtered", entries.size(), total);
 	}
 
 	private void export() {
-		if (SubtitleLog.size() == 0) {
+		List<SubtitleLog.Entry> entries = filtered();
+		if (entries.isEmpty()) {
 			status = Text.translatable("voice_subtitles.log.empty").formatted(Formatting.GRAY);
 			return;
 		}
 		try {
-			Path file = SubtitleLog.export();
+			// Whatever the filters are showing is what gets written: seeing the
+			// file differ from the screen would be its own small betrayal.
+			Path file = SubtitleLog.export(entries);
 			status = Text.translatable("voice_subtitles.log.exported", file.getFileName().toString())
 					.formatted(Formatting.GREEN);
 		} catch (IOException e) {
@@ -86,10 +290,10 @@ public class SubtitleLogScreen extends Screen {
 	@Override
 	public void render(DrawContext context, int mouseX, int mouseY, float delta) {
 		super.render(context, mouseX, mouseY, delta);
-		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 16, 0xFFFFFFFF);
+		context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, 12, 0xFFFFFFFF);
 		// Said once, up front: half of this came out of a recogniser.
 		context.drawCenteredTextWithShadow(this.textRenderer,
-				Text.translatable("voice_subtitles.log.disclaimer"), this.width / 2, 30, 0xFF9A9A9A);
+				Text.translatable("voice_subtitles.log.disclaimer"), this.width / 2, 26, 0xFF9A9A9A);
 		if (!status.getString().isEmpty()) {
 			context.drawCenteredTextWithShadow(this.textRenderer, status, this.width / 2, this.height - 44, 0xFFFFFFFF);
 		}
@@ -109,23 +313,47 @@ public class SubtitleLogScreen extends Screen {
 	 */
 	private static class LogList extends ElementListWidget<LogList.Row> {
 
+		private final int rowWidth;
+
 		LogList(MinecraftClient client, int width, int height, int y) {
 			super(client, width, height, y, ROW_HEIGHT);
+			this.rowWidth = width - 12;
 		}
 
-		void addEntry(SubtitleLog.Entry entry) {
+		void show(List<SubtitleLog.Entry> entries, String highlight) {
+			List<Row> rows = new ArrayList<>();
 			MinecraftClient client = MinecraftClient.getInstance();
-			int color = SpeakerColors.colorOf(entry.speaker());
-
-			MutableText full = Text.literal(SubtitleLog.timeOf(entry) + " ").formatted(Formatting.DARK_GRAY)
-					.append(Text.literal(entry.name()).styled(style -> style.withColor(color)))
-					.append(Text.literal(entry.source() == SubtitleFeed.Source.CHAT ? " [chat]: " : ": ")
-							.formatted(Formatting.DARK_GRAY))
-					.append(Text.literal(entry.text()).formatted(Formatting.WHITE));
-
-			for (OrderedText row : client.textRenderer.wrapLines(full, ROW_WIDTH)) {
-				addEntry(new Row(row));
+			for (SubtitleLog.Entry entry : entries) {
+				int color = SpeakerColors.colorOf(entry.speaker());
+				MutableText full = Text.literal(SubtitleLog.timeOf(entry) + " ").formatted(Formatting.DARK_GRAY)
+						.append(Text.literal(entry.name()).styled(style -> style.withColor(color)))
+						.append(Text.literal(entry.source() == SubtitleFeed.Source.CHAT ? " [chat]: " : ": ")
+								.formatted(Formatting.DARK_GRAY))
+						.append(body(entry.text(), highlight));
+				for (OrderedText row : client.textRenderer.wrapLines(full, rowWidth)) {
+					rows.add(new Row(row));
+				}
 			}
+			replaceEntries(rows);
+		}
+
+		/** The text, with what was searched for picked out of it. */
+		private static MutableText body(String text, String highlight) {
+			if (highlight.isEmpty()) {
+				return Text.literal(text).formatted(Formatting.WHITE);
+			}
+			MutableText out = Text.empty();
+			String haystack = text.toLowerCase(Locale.ROOT);
+			String needle = highlight.toLowerCase(Locale.ROOT);
+			int from = 0;
+			int at;
+			while ((at = haystack.indexOf(needle, from)) >= 0) {
+				out.append(Text.literal(text.substring(from, at)).formatted(Formatting.WHITE));
+				out.append(Text.literal(text.substring(at, at + needle.length()))
+						.formatted(Formatting.YELLOW, Formatting.BOLD));
+				from = at + needle.length();
+			}
+			return out.append(Text.literal(text.substring(from)).formatted(Formatting.WHITE));
 		}
 
 		void scrollToBottom() {
@@ -134,7 +362,7 @@ public class SubtitleLogScreen extends Screen {
 
 		@Override
 		public int getRowWidth() {
-			return ROW_WIDTH;
+			return rowWidth;
 		}
 
 		static class Row extends ElementListWidget.Entry<Row> {

@@ -82,16 +82,27 @@ public final class SubtitleLog {
 	}
 
 	/**
-	 * Writes the log out as plain text.
+	 * Writes the whole log out as plain text.
 	 *
 	 * @return the file written
 	 */
 	public static Path export() throws IOException {
+		return export(entries());
+	}
+
+	/**
+	 * Writes these entries out as plain text.
+	 *
+	 * <p>Takes a list rather than always writing everything, so the log screen
+	 * can save exactly what its filters are showing.
+	 *
+	 * @return the file written
+	 */
+	public static Path export(List<Entry> entries) throws IOException {
 		Path dir = FabricLoader.getInstance().getConfigDir().resolve("voice_subtitles").resolve("logs");
 		Files.createDirectories(dir);
 		Path file = dir.resolve("conversation-" + FILE_STAMP.format(LocalDateTime.now()) + ".txt");
 
-		List<Entry> entries = entries();
 		try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
 			writer.write("# Voice Subtitles – conversation log\n");
 			writer.write("# Spoken lines come from offline speech recognition and can be wrong.\n");

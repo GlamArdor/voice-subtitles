@@ -156,5 +156,22 @@
 	"voice_subtitles.download.progress_eta": "Скачиваю %s: %s из %s МБ (%s %%), осталось ~%s",
 	"voice_subtitles.download.unknown": "Скачиваю %s: %s МБ",
 	"voice_subtitles.time.seconds": "%s с",
-	"voice_subtitles.time.minutes": "%s мин"
+	"voice_subtitles.time.minutes": "%s мин",
+	"voice_subtitles.log.search": "Поиск по репликам",
+	"voice_subtitles.log.count": "Записей: %s",
+	"voice_subtitles.log.count.filtered": "Показано %s из %s",
+	"voice_subtitles.log.export.tooltip": "Сохраняет то, что сейчас показано, с учётом фильтров.",
+	"voice_subtitles.log.filters.reset": "Сбросить фильтры",
+	"voice_subtitles.log.filter.speaker": "Кто: %s",
+	"voice_subtitles.log.filter.everyone": "все",
+	"voice_subtitles.log.filter.source": "Откуда: %s",
+	"voice_subtitles.log.filter.source.any": "всё",
+	"voice_subtitles.log.filter.source.voice": "голос",
+	"voice_subtitles.log.filter.source.chat": "чат",
+	"voice_subtitles.log.filter.window": "Период: %s",
+	"voice_subtitles.log.filter.always": "всё время",
+	"voice_subtitles.log.filter.order": "Порядок: %s",
+	"voice_subtitles.log.filter.newest": "новые сверху",
+	"voice_subtitles.log.filter.oldest": "старые сверху",
+	"voice_subtitles.time.hours": "%s ч"
 }

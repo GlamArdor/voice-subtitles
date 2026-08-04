@@ -156,5 +156,22 @@
 	"voice_subtitles.download.progress_eta": "Downloading %s: %s of %s MB (%s %%), about %s left",
 	"voice_subtitles.download.unknown": "Downloading %s: %s MB",
 	"voice_subtitles.time.seconds": "%s s",
-	"voice_subtitles.time.minutes": "%s min"
+	"voice_subtitles.time.minutes": "%s min",
+	"voice_subtitles.log.search": "Search the lines",
+	"voice_subtitles.log.count": "Entries: %s",
+	"voice_subtitles.log.count.filtered": "Showing %s of %s",
+	"voice_subtitles.log.export.tooltip": "Saves what is on screen, filters and all.",
+	"voice_subtitles.log.filters.reset": "Reset the filters",
+	"voice_subtitles.log.filter.speaker": "Who: %s",
+	"voice_subtitles.log.filter.everyone": "everyone",
+	"voice_subtitles.log.filter.source": "From: %s",
+	"voice_subtitles.log.filter.source.any": "anywhere",
+	"voice_subtitles.log.filter.source.voice": "voice",
+	"voice_subtitles.log.filter.source.chat": "chat",
+	"voice_subtitles.log.filter.window": "Period: %s",
+	"voice_subtitles.log.filter.always": "all of it",
+	"voice_subtitles.log.filter.order": "Order: %s",
+	"voice_subtitles.log.filter.newest": "newest first",
+	"voice_subtitles.log.filter.oldest": "oldest first",
+	"voice_subtitles.time.hours": "%s h"
 }
