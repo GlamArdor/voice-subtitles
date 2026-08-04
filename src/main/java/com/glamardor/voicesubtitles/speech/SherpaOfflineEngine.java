@@ -39,10 +39,23 @@ final class SherpaOfflineEngine implements SpeechEngine {
 	/**
 	 * An utterance this long is cut and reported by itself.
 	 *
-	 * <p>Somebody who talks without a break still gets captions, and the cost of
-	 * a decode stops growing with the length of the monologue.
+	 * <p>Generous on purpose. Somebody telling a story barely pauses, and at
+	 * twenty seconds their sentence was being guillotined mid-word: the caption
+	 * ended on "и она, оказывается, за" and the rest turned up as a separate
+	 * line. Two minutes covers any monologue worth calling one.
 	 */
-	private static final int MAX_UTTERANCE_SECONDS = 20;
+	private static final int MAX_UTTERANCE_SECONDS = 120;
+
+	/**
+	 * The most audio a running decode looks at, in seconds.
+	 *
+	 * <p>Decoding costs time in proportion to the audio, so re-reading a whole
+	 * monologue every time would slow to a crawl exactly when somebody is
+	 * talking most. While speech is in progress only the recent part is decoded,
+	 * which keeps that cost flat; the final pass at the end of the utterance
+	 * reads everything and produces the sentence in full.
+	 */
+	private static final int LIVE_WINDOW_SECONDS = 20;
 
 	private final String modelId;
 	private final OfflineRecognizer recognizer;
@@ -106,13 +119,17 @@ final class SherpaOfflineEngine implements SpeechEngine {
 		}
 	}
 
-	/** @return the text for these samples, or an empty string if there are none */
-	private String decode(float[] samples, int length) {
-		if (length == 0) {
+	/**
+	 * @param from   first sample to decode, for reading only the recent part
+	 * @return the text for these samples, or an empty string if there are none
+	 */
+	private String decode(float[] samples, int from, int length) {
+		int count = length - from;
+		if (count <= 0) {
 			return "";
 		}
-		float[] audio = new float[length];
-		System.arraycopy(samples, 0, audio, 0, length);
+		float[] audio = new float[count];
+		System.arraycopy(samples, from, audio, 0, count);
 		OfflineStream stream = recognizer.createStream();
 		try {
 			stream.acceptWaveform(audio, RATE);
@@ -141,7 +158,7 @@ final class SherpaOfflineEngine implements SpeechEngine {
 			if (length >= RATE * MAX_UTTERANCE_SECONDS) {
 				// Long enough to be a sentence in its own right, whether or not
 				// the speaker thinks so.
-				String text = run();
+				String text = run(true);
 				reset();
 				return text;
 			}
@@ -162,15 +179,24 @@ final class SherpaOfflineEngine implements SpeechEngine {
 
 		@Override
 		public String settle() {
-			String text = run();
+			// The final pass reads the whole utterance, however long it ran.
+			String text = run(true);
 			reset();
 			return text;
 		}
 
 		private String run() {
+			return run(false);
+		}
+
+		private String run(boolean whole) {
+			// Mid-speech, start from the last window rather than the beginning:
+			// the caption is showing the recent words anyway, and the cost of a
+			// decode then stops growing with the length of the monologue.
+			int from = whole ? 0 : Math.max(0, length - RATE * LIVE_WINDOW_SECONDS);
 			long started = System.currentTimeMillis();
 			try {
-				lastText = decode(buffer, length);
+				lastText = decode(buffer, from, length);
 			} catch (Throwable t) {
 				VoiceSubtitles.LOGGER.error("Offline decode failed", t);
 				lastText = "";

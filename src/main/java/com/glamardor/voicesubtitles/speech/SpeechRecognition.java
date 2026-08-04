@@ -366,6 +366,15 @@ public final class SpeechRecognition {
 		private volatile boolean unsettled;
 		/** The last settled sentence, to recognise it being reported twice. */
 		private String lastSettled = "";
+		/**
+		 * The feed line this utterance is writing into.
+		 *
+		 * <p>Held rather than looked up, because the whole-utterance engines
+		 * decode the same audio again and again and the wording moves between
+		 * passes. Matching the line by its text meant a reworded sentence landed
+		 * in a second caption next to the first.
+		 */
+		private SubtitleFeed.Line line;
 
 		Session(UUID speaker, SpeechEngine.Stream stream) {
 			this.speaker = speaker;
@@ -434,15 +443,26 @@ public final class SpeechRecognition {
 				// The engine found the end of an utterance by itself.
 				unsettled = false;
 				lastSettled = finished;
-				if (!finished.isBlank()) {
-					SubtitleFeed.putText(speaker, finished, true);
+				if (finished.isBlank()) {
+					SubtitleFeed.close(line);
+				} else {
+					SubtitleFeed.setText(lineToWriteTo(), finished, true);
 				}
+				line = null;
 			} else if (VoiceSubtitlesConfig.get().showPartial) {
 				String partial = stream.partial();
 				if (!partial.isBlank()) {
-					SubtitleFeed.putText(speaker, partial, false);
+					SubtitleFeed.setText(lineToWriteTo(), partial, false);
 				}
 			}
+		}
+
+		/** This utterance's line, adopting the one the feed opened for the audio. */
+		private SubtitleFeed.Line lineToWriteTo() {
+			if (line == null || !line.open()) {
+				line = SubtitleFeed.openOrCreate(speaker);
+			}
+			return line;
 		}
 
 		/**
@@ -454,18 +474,30 @@ public final class SpeechRecognition {
 			unsettled = false;
 			String text = stream.settle();
 			resampler.reset();
-			// Engines hand back the whole sentence again when they settle
-			// something already reported; repeating it would read as a duplicate.
-			if (!text.isBlank() && text.equals(lastSettled)) {
-				SubtitleFeed.close(speaker);
+
+			if (text.isBlank()) {
+				SubtitleFeed.close(line);
+				line = null;
 				return;
 			}
-			lastSettled = text;
-			if (!text.isBlank()) {
-				SubtitleFeed.putText(speaker, text, true);
-			} else {
-				SubtitleFeed.close(speaker);
+			// A line of our own means this is still the same utterance, however
+			// much the wording moved between passes: write it there. With no
+			// line, the engine is handing back a sentence it already settled,
+			// and repeating it would read as a duplicate.
+			if (line == null && isSameAgain(lastSettled, text)) {
+				lastSettled = text;
+				return;
 			}
+			SubtitleFeed.setText(lineToWriteTo(), text, true);
+			lastSettled = text;
+			line = null;
+		}
+
+		/** True when one text is just the other carried a little further. */
+		private static boolean isSameAgain(String previous, String next) {
+			String a = previous.trim().toLowerCase();
+			String b = next.trim().toLowerCase();
+			return !a.isEmpty() && (b.startsWith(a) || a.startsWith(b));
 		}
 	}
 }

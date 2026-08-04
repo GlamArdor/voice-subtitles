@@ -136,26 +136,39 @@ public final class SubtitleFeed {
 	}
 
 	/**
-	 * Feeds recognised text into the speaker's current line – the hook the
-	 * speech recogniser will use.
+	 * The line this speaker's words belong in, opening one if they have none.
 	 *
-	 * @param finalText true for a settled result, false for a partial one that
-	 *                  may still change
+	 * <p>Handed to the recogniser so it can keep writing into the same line for
+	 * as long as one utterance lasts. It used to look the line up by matching
+	 * text instead, which broke as soon as an engine changed its mind: the
+	 * whole-utterance models decode the same audio repeatedly and the wording
+	 * shifts between passes, so "можно эту модель" became "может, эту модель",
+	 * failed to match, and the corrected sentence appeared as a second caption
+	 * beside the first.
 	 */
-	public static void putText(UUID speaker, String text, boolean finalText) {
-		if (text == null) {
+	public static Line openOrCreate(UUID speaker) {
+		Line open = openLineOf(speaker);
+		if (open != null) {
+			return open;
+		}
+		Line line = new Line(speaker, Source.VOICE, System.currentTimeMillis());
+		LINES.add(line);
+		trim();
+		return line;
+	}
+
+	/**
+	 * Puts recognised text into a line.
+	 *
+	 * @param finalText true for a settled result, false for one that may still
+	 *                  change
+	 */
+	public static void setText(Line line, String text, boolean finalText) {
+		if (line == null || text == null) {
 			return;
 		}
 		long now = System.currentTimeMillis();
-		Line line = openLineOf(speaker);
-		if (line == null) {
-			line = mergeableLineOf(speaker, text, now);
-		}
-		if (line == null) {
-			line = new Line(speaker, Source.VOICE, now);
-			LINES.add(line);
-			trim();
-		} else if (!line.open()) {
+		if (!line.open()) {
 			// Reopened: the recogniser is still refining a sentence it had
 			// already settled once.
 			line.closedAt = 0L;
@@ -165,6 +178,14 @@ public final class SubtitleFeed {
 		line.lastAudioAt = now;
 		if (finalText) {
 			line.closedAt = now;
+		}
+	}
+
+	/** Ends this line, whatever it holds. */
+	public static void close(Line line) {
+		if (line != null && line.open()) {
+			line.closedAt = System.currentTimeMillis();
+			line.partial = false;
 		}
 	}
 
@@ -229,33 +250,6 @@ public final class SubtitleFeed {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * The speaker's just-closed line, when the incoming text is plainly the same
-	 * sentence rather than a new one.
-	 *
-	 * <p>Recognisers settle a sentence and then keep refining it: the final
-	 * result often arrives a moment after the line was closed, and repeats
-	 * everything already shown plus the last word or two. Treated as new speech,
-	 * that reads as the whole sentence being said twice. So if one text is a
-	 * prefix of the other and the line closed a moment ago, they are the same
-	 * utterance and the existing line is updated in place.
-	 */
-	private static Line mergeableLineOf(UUID speaker, String text, long now) {
-		Line last = lastLineOf(speaker);
-		if (last == null || last.source != Source.VOICE || last.open()) {
-			return null;
-		}
-		if (now - last.closedAt > MERGE_WINDOW_MS) {
-			return null;
-		}
-		String existing = normalise(last.text);
-		String incoming = normalise(text);
-		if (existing.isEmpty() || incoming.isEmpty()) {
-			return null;
-		}
-		return incoming.startsWith(existing) || existing.startsWith(incoming) ? last : null;
 	}
 
 	private static String normalise(String text) {
