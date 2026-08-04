@@ -46,11 +46,8 @@ public final class ModelDownload {
 
 		Thread thread = new Thread(() -> {
 			try {
-				SpeechModels.download(entry, percent -> {
-					if (percent % 25 == 0 && percent > 0 && percent < 100) {
-						VoiceSubtitles.LOGGER.info("Model '{}': {}%", entry.id(), percent);
-					}
-				});
+				DownloadState.begin(Text.translatable("voice_subtitles.download.model", entry.language()));
+				SpeechModels.download(entry, DownloadState::update);
 				toast(Text.translatable("toast.voice_subtitles.model.ready"),
 						Text.translatable("toast.voice_subtitles.model.ready.detail", entry.language()));
 				MinecraftClient.getInstance().execute(onFinished);
@@ -59,6 +56,7 @@ public final class ModelDownload {
 				toast(Text.translatable("toast.voice_subtitles.model.failed"),
 						Text.literal(String.valueOf(e.getMessage())).formatted(Formatting.RED));
 			} finally {
+				DownloadState.end();
 				RUNNING.set(false);
 			}
 		}, "voice-subtitles-model-download");
@@ -86,11 +84,8 @@ public final class ModelDownload {
 
 		Thread thread = new Thread(() -> {
 			try {
-				SherpaNatives.download(build, percent -> {
-					if (percent % 25 == 0 && percent > 0 && percent < 100) {
-						VoiceSubtitles.LOGGER.info("sherpa-onnx library: {}%", percent);
-					}
-				});
+				DownloadState.begin(Text.translatable("voice_subtitles.download.native"));
+				SherpaNatives.download(build, DownloadState::update);
 				toast(Text.translatable("toast.voice_subtitles.native.ready"),
 						Text.translatable("toast.voice_subtitles.native.ready.detail"));
 				MinecraftClient.getInstance().execute(onFinished);
@@ -99,6 +94,7 @@ public final class ModelDownload {
 				toast(Text.translatable("toast.voice_subtitles.native.failed"),
 						Text.literal(String.valueOf(e.getMessage())).formatted(Formatting.RED));
 			} finally {
+				DownloadState.end();
 				RUNNING.set(false);
 			}
 		}, "voice-subtitles-native-download");

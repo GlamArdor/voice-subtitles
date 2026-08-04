@@ -149,5 +149,12 @@
 	"toast.voice_subtitles.native.size": "Downloading the sherpa-onnx recognition library: %s, %s MB",
 	"toast.voice_subtitles.native.ready": "Voice Subtitles",
 	"toast.voice_subtitles.native.ready.detail": "sherpa-onnx library installed",
-	"toast.voice_subtitles.native.failed": "Voice Subtitles: could not download the sherpa-onnx library"
+	"toast.voice_subtitles.native.failed": "Voice Subtitles: could not download the sherpa-onnx library",
+	"voice_subtitles.download.model": "the '%s' model",
+	"voice_subtitles.download.native": "the recognition library",
+	"voice_subtitles.download.progress": "Downloading %s: %s of %s MB (%s %%)",
+	"voice_subtitles.download.progress_eta": "Downloading %s: %s of %s MB (%s %%), about %s left",
+	"voice_subtitles.download.unknown": "Downloading %s: %s MB",
+	"voice_subtitles.time.seconds": "%s s",
+	"voice_subtitles.time.minutes": "%s min"
 }

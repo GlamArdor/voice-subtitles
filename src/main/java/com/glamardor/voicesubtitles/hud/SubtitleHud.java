@@ -67,10 +67,10 @@ public final class SubtitleHud {
 		List<SubtitleFeed.Line> lines = SubtitleFeed.all();
 		TextRenderer textRenderer = client.textRenderer;
 
-		// Drawn whether or not anybody is talking: a model that takes a minute to
-		// load needs to say so, and it needs to say so before the first caption
-		// fails to appear rather than after.
-		int loadingHeight = LoadingIndicator.render(context, textRenderer,
+		// Drawn whether or not anybody is talking: a download that takes minutes
+		// and a model that takes a minute to load both need to say so, and they
+		// need to say it before the first caption fails to appear, not after.
+		int loadingHeight = ProgressOverlay.render(context, textRenderer,
 				context.getScaledWindowWidth() / 2,
 				context.getScaledWindowHeight() - cfg.bottomOffset);
 

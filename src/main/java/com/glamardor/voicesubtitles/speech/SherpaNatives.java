@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -104,7 +103,7 @@ public final class SherpaNatives {
 	}
 
 	/** Downloads and unpacks the library for this machine. */
-	public static void download(Build build, Consumer<Integer> progress) throws Exception {
+	public static void download(Build build, Archives.Progress progress) throws Exception {
 		Path root = directory();
 		Files.createDirectories(root);
 		Path archive = root.resolve(build.archiveName());

@@ -13,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
-import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -32,8 +31,20 @@ final class Archives {
 	private Archives() {
 	}
 
-	/** Downloads to {@code target}, reporting progress as a percentage. */
-	static void download(String url, Path target, Consumer<Integer> progress) throws IOException {
+	/** Told how many bytes have arrived out of how many are expected. */
+	interface Progress {
+		/** @param total the size from the server, or -1 when it did not say */
+		void update(long read, long total);
+	}
+
+	/**
+	 * Downloads to {@code target}.
+	 *
+	 * <p>Progress is reported by bytes rather than whole percents, and at most
+	 * ten times a second: a bar that only moves every five percent looks stuck
+	 * on a slow connection, which is exactly the impression to avoid.
+	 */
+	static void download(String url, Path target, Progress progress) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
 		connection.setConnectTimeout(15_000);
 		connection.setReadTimeout(30_000);
@@ -42,8 +53,9 @@ final class Archives {
 
 		long total = connection.getContentLengthLong();
 		long read = 0L;
-		int lastReported = -1;
+		long lastReportAt = 0L;
 
+		progress.update(0L, total);
 		try (InputStream in = connection.getInputStream();
 		     OutputStream out = Files.newOutputStream(target)) {
 			byte[] buffer = new byte[64 * 1024];
@@ -51,15 +63,14 @@ final class Archives {
 			while ((count = in.read(buffer)) > 0) {
 				out.write(buffer, 0, count);
 				read += count;
-				if (total > 0L) {
-					int percent = (int) (read * 100L / total);
-					if (percent / 5 != lastReported / 5) {
-						lastReported = percent;
-						progress.accept(percent);
-					}
+				long now = System.currentTimeMillis();
+				if (now - lastReportAt >= 100L) {
+					lastReportAt = now;
+					progress.update(read, total);
 				}
 			}
 		}
+		progress.update(read, total);
 	}
 
 	static String sha256(Path file) throws Exception {

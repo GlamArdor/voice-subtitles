@@ -3,12 +3,15 @@ package com.glamardor.voicesubtitles;
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import com.glamardor.voicesubtitles.gui.LivePreview;
 import com.glamardor.voicesubtitles.hud.OverHeadSubtitles;
+import com.glamardor.voicesubtitles.hud.ProgressOverlay;
 import com.glamardor.voicesubtitles.hud.SubtitleHud;
+import com.glamardor.voicesubtitles.speech.DownloadState;
 import com.glamardor.voicesubtitles.speech.SpeechRecognition;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.client.MinecraftClient;
 
 /**
@@ -41,8 +44,28 @@ public class VoiceSubtitlesClient implements ClientModInitializer {
 
 		SubtitleCommands.register();
 		Keybinds.register();
+		registerMenuProgress();
 
 		VoiceSubtitles.LOGGER.info("Voice Subtitles ready");
+	}
+
+	/**
+	 * Draws the download bar over menus.
+	 *
+	 * <p>The first download starts as soon as the client is up, which is at the
+	 * title screen, where there is no HUD to draw on. Only when there is no world
+	 * loaded: in game the HUD already draws it, and doing both would stack two
+	 * translucent plates on the same pixels.
+	 */
+	private void registerMenuProgress() {
+		ScreenEvents.AFTER_INIT.register((client, screen, width, height) ->
+				ScreenEvents.afterRender(screen).register((rendered, context, mouseX, mouseY, delta) -> {
+					if (client.world == null && DownloadState.isActive()) {
+						ProgressOverlay.render(context, client.textRenderer,
+								context.getScaledWindowWidth() / 2,
+								context.getScaledWindowHeight() - 12);
+					}
+				}));
 	}
 
 	/**

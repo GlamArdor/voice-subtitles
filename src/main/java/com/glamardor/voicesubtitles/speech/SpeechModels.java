@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * The catalogue of offline recognition models, and where they live on disk.
@@ -141,12 +140,12 @@ public final class SpeechModels {
 	/**
 	 * Downloads and unpacks a model.
 	 *
-	 * @param progress called with 0–100 as the download proceeds
+	 * @param progress told how many bytes have arrived so far
 	 * @throws Exception if the download or the unpacking fails; the partially
 	 *                   written directory is left for inspection rather than
 	 *                   silently deleted
 	 */
-	public static void download(Entry entry, Consumer<Integer> progress) throws Exception {
+	public static void download(Entry entry, Archives.Progress progress) throws Exception {
 		Path models = modelsDirectory();
 		Files.createDirectories(models);
 		Path archive = models.resolve(entry.folder() + (entry.isTarBz2() ? ".tar.bz2" : ".zip"));
