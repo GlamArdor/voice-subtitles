@@ -1,0 +1,107 @@
+package com.glamardor.voicesubtitles;
+
+import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.DeathScreen;
+import net.minecraft.client.network.ServerInfo;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableTextContent;
+
+/**
+ * The things that happen around a conversation, filed alongside it.
+ *
+ * <p>A log of nothing but speech is a wall of sentences with no idea where or
+ * when any of it happened. Joining a server, leaving it, somebody dying, the
+ * game closing: each of those is one line in the log, and between them every
+ * caption acquires a place and a time.
+ */
+public final class LogEvents {
+
+	/** Two deaths cannot happen this close together, so the second one is an echo. */
+	private static final long DEATH_ECHO_MS = 3000L;
+
+	private static long lastDeathAt;
+	private static boolean sawDeathScreen;
+	/** Remembered so leaving can name the server, by which time it is already gone. */
+	private static String currentPlace = "";
+
+	private LogEvents() {
+	}
+
+	public static void register() {
+		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+			currentPlace = placeOf(client);
+			SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.join", currentPlace));
+		});
+
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.leave",
+					currentPlace.isEmpty() ? placeOf(client) : currentPlace));
+			currentPlace = "";
+			sawDeathScreen = false;
+		});
+
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+			SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.quit"));
+			// Flushed here as well as by the client: these handlers run in the
+			// order they were registered, and the client's flush has already
+			// been and gone by the time this line is written.
+			SubtitleLog.flush();
+		});
+
+		// Deaths and kills arrive as ordinary chat: vanilla builds them from
+		// translation keys beginning with "death.", which holds whatever language
+		// the game is in. A server writing its own death messages will not match,
+		// and then only the player's own death is noticed, below.
+		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
+			if (!overlay && isDeathMessage(message)) {
+				lastDeathAt = System.currentTimeMillis();
+				SubtitleLog.recordEvent(message.copy());
+			}
+		});
+
+		ClientTickEvents.END_CLIENT_TICK.register(LogEvents::tick);
+	}
+
+	/**
+	 * Catches the player's own death from the screen rather than from a message,
+	 * so it is noticed even where the server words it its own way. Skipped when a
+	 * death message just went past, which would be the same death twice.
+	 */
+	private static void tick(MinecraftClient client) {
+		boolean dead = client.currentScreen instanceof DeathScreen;
+		if (dead && !sawDeathScreen) {
+			if (System.currentTimeMillis() - lastDeathAt > DEATH_ECHO_MS) {
+				SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.death"));
+			}
+		}
+		sawDeathScreen = dead;
+	}
+
+	private static boolean isDeathMessage(Text message) {
+		return message.getContent() instanceof TranslatableTextContent translatable
+				&& translatable.getKey().startsWith("death.");
+	}
+
+	/** Where we are: the server's address, or the name of the world in single player. */
+	private static String placeOf(MinecraftClient client) {
+		ServerInfo server = client.getCurrentServerEntry();
+		if (server != null && server.address != null && !server.address.isBlank()) {
+			return server.address;
+		}
+		if (client.isInSingleplayer() && client.getServer() != null) {
+			return client.getServer().getSaveProperties().getLevelName();
+		}
+		return "?";
+	}
+
+	/** @return true when events are wanted at all. */
+	static boolean wanted() {
+		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
+		return cfg.keepLog && cfg.logEvents;
+	}
+}

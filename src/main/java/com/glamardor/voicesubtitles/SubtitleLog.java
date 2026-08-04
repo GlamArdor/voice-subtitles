@@ -2,6 +2,7 @@ package com.glamardor.voicesubtitles;
 
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.text.Text;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -54,8 +55,34 @@ public final class SubtitleLog {
 		VoiceSubtitles.LOGGER.info("Conversation log: {} lines carried over", previous.size());
 	}
 
+	/** Events belong to nobody, so they are filed under this. */
+	public static final UUID NOBODY = new UUID(0L, 0L);
+
 	/** One finished line. The name is captured as it was shown at the time. */
 	public record Entry(long time, UUID speaker, String name, SubtitleFeed.Source source, String text) {
+
+		/** True for a happening rather than something somebody said. */
+		public boolean isEvent() {
+			return source == SubtitleFeed.Source.EVENT;
+		}
+	}
+
+	/**
+	 * Files something that happened rather than something that was said.
+	 *
+	 * <p>Kept out of the feed on purpose: these belong in the record, not on
+	 * screen, where the game already announces them in its own way.
+	 */
+	public static void recordEvent(Text what) {
+		if (!LogEvents.wanted()) {
+			return;
+		}
+		Entry entry = new Entry(System.currentTimeMillis(), NOBODY, "",
+				SubtitleFeed.Source.EVENT, what.getString());
+		synchronized (ENTRIES) {
+			ENTRIES.add(entry);
+		}
+		LogStore.append(entry);
 	}
 
 	/**

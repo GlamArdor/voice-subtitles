@@ -52,6 +52,7 @@ public class VoiceSubtitlesClient implements ClientModInitializer {
 		});
 
 		SubtitleLog.init();
+		LogEvents.register();
 
 		SubtitleCommands.register();
 		Keybinds.register();

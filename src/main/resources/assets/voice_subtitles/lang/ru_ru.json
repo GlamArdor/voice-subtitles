@@ -179,5 +179,13 @@
 	"voice_subtitles.option.log_keep_days.tooltip": "Через сколько дней старые записи удаляются. Ноль – не удалять никогда.",
 	"voice_subtitles.log.clear.confirm": "Нажмите ещё раз, чтобы удалить журнал",
 	"voice_subtitles.unit.days": "%s дн.",
-	"voice_subtitles.unit.forever": "не удалять"
+	"voice_subtitles.unit.forever": "не удалять",
+	"voice_subtitles.value.placement.log_only": "Только в журнал",
+	"voice_subtitles.log.filter.source.event": "события",
+	"voice_subtitles.option.log_events": "Записывать события",
+	"voice_subtitles.option.log_events.tooltip": "Отмечать в журнале заход на сервер и выход с него, смерти и закрытие игры. Без этого журнал — сплошная стена реплик, по которой не понять, где и когда они прозвучали.",
+	"voice_subtitles.event.join": "Зашёл на сервер: %s",
+	"voice_subtitles.event.leave": "Вышел с сервера: %s",
+	"voice_subtitles.event.quit": "Выход из игры",
+	"voice_subtitles.event.death": "Смерть"
 }

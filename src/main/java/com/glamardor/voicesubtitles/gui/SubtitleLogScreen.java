@@ -145,8 +145,12 @@ public class SubtitleLogScreen extends Screen {
 		y += gap;
 
 		addDrawableChild(ButtonWidget.builder(sourceLabel(), b -> {
-			source = source == null ? SubtitleFeed.Source.VOICE
-					: source == SubtitleFeed.Source.VOICE ? SubtitleFeed.Source.CHAT : null;
+			source = switch (source == null ? "all" : source.name()) {
+				case "all" -> SubtitleFeed.Source.VOICE;
+				case "VOICE" -> SubtitleFeed.Source.CHAT;
+				case "CHAT" -> SubtitleFeed.Source.EVENT;
+				default -> null;
+			};
 			b.setMessage(sourceLabel());
 			rebuild();
 		}).dimensions(x, y, PANEL_WIDTH, 20).build());
@@ -186,7 +190,11 @@ public class SubtitleLogScreen extends Screen {
 	}
 
 	private Text sourceLabel() {
-		String key = source == null ? "any" : source == SubtitleFeed.Source.VOICE ? "voice" : "chat";
+		String key = source == null ? "any" : switch (source) {
+			case VOICE -> "voice";
+			case CHAT -> "chat";
+			case EVENT -> "event";
+		};
 		return Text.translatable("voice_subtitles.log.filter.source",
 				Text.translatable("voice_subtitles.log.filter.source." + key));
 	}
@@ -250,7 +258,7 @@ public class SubtitleLogScreen extends Screen {
 
 		List<SubtitleLog.Entry> out = new ArrayList<>();
 		for (SubtitleLog.Entry entry : SubtitleLog.entries()) {
-			if (speaker != null && !speaker.equals(entry.speaker())) {
+			if (speaker != null && !speaker.equals(entry.speaker()) && !entry.isEvent()) {
 				continue;
 			}
 			if (source != null && entry.source() != source) {
@@ -342,8 +350,18 @@ public class SubtitleLogScreen extends Screen {
 			List<Row> rows = new ArrayList<>();
 			MinecraftClient client = MinecraftClient.getInstance();
 			for (SubtitleLog.Entry entry : entries) {
+				MutableText full;
+				if (entry.isEvent()) {
+					full = Text.literal(SubtitleLog.timeOf(entry) + "  ").formatted(Formatting.DARK_GRAY)
+							.append(Text.literal("— ").formatted(Formatting.DARK_GRAY))
+							.append(body(entry.text(), highlight).formatted(Formatting.GRAY, Formatting.ITALIC));
+					for (OrderedText row : client.textRenderer.wrapLines(full, rowWidth)) {
+						rows.add(new Row(row));
+					}
+					continue;
+				}
 				int color = SpeakerColors.colorOf(entry.speaker());
-				MutableText full = Text.literal(SubtitleLog.timeOf(entry) + " ").formatted(Formatting.DARK_GRAY)
+				full = Text.literal(SubtitleLog.timeOf(entry) + " ").formatted(Formatting.DARK_GRAY)
 						.append(Text.literal(entry.name()).styled(style -> style.withColor(color)))
 						.append(Text.literal(entry.source() == SubtitleFeed.Source.CHAT ? " [chat]: " : ": ")
 								.formatted(Formatting.DARK_GRAY))

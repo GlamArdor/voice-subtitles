@@ -108,6 +108,7 @@ public class FallbackConfigScreen extends Screen {
 
 		list.addHeader(category("log"));
 		list.addWidget(toggle("keep_log", () -> config.keepLog, v -> config.keepLog = v));
+		list.addWidget(toggle("log_events", () -> config.logEvents, v -> config.logEvents = v));
 		list.addWidget(plainSlider("log_capacity", config.logCapacity, 50, 20000, v -> config.logCapacity = v));
 		list.addWidget(new OptionSlider("log_keep_days", config.logKeepDays, 0, 365,
 				v -> config.logKeepDays = v,

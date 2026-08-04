@@ -140,6 +140,7 @@ final class ClothConfigScreens {
 		// ── Conversation log ────────────────────────────────────────────────
 		ConfigCategory log = category(builder, "log");
 		log.addEntry(toggle(entries, "keep_log", config.keepLog, defaults.keepLog, v -> config.keepLog = v));
+		log.addEntry(toggle(entries, "log_events", config.logEvents, defaults.logEvents, v -> config.logEvents = v));
 		log.addEntry(slider(entries, "log_capacity", config.logCapacity, defaults.logCapacity, 50, 20000,
 				v -> config.logCapacity = v, v -> Text.literal(String.valueOf(v))));
 		log.addEntry(slider(entries, "log_keep_days", config.logKeepDays, defaults.logKeepDays, 0, 365,

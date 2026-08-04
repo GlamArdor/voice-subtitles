@@ -26,14 +26,22 @@ public class VoiceSubtitlesConfig {
 		/** Floating above the speaker's head in the world. */
 		OVER_HEAD,
 		/** Both at once. */
-		BOTH;
+		BOTH,
+		/**
+		 * Nowhere on screen, but still written to the conversation log.
+		 *
+		 * <p>For somebody who wants the record without the captions: text chat
+		 * is already readable in the chat window, and repeating it in the feed
+		 * is clutter, yet it still belongs in the log beside the speech.
+		 */
+		LOG_ONLY;
 
 		public boolean inFeed() {
-			return this != OVER_HEAD;
+			return this == FEED || this == BOTH;
 		}
 
 		public boolean overHead() {
-			return this != FEED;
+			return this == OVER_HEAD || this == BOTH;
 		}
 	}
 
@@ -147,6 +155,15 @@ public class VoiceSubtitlesConfig {
 	public boolean keepLog = true;
 	/** How many lines the log holds before the oldest ones are dropped. */
 	public int logCapacity = 2000;
+	/**
+	 * Note the comings and goings in the log: joining and leaving a server,
+	 * deaths, closing the game.
+	 *
+	 * <p>Without them a log is a wall of speech with no idea where or when any
+	 * of it happened. With them, a line has a place: this was said on that
+	 * server, that evening, before somebody died.
+	 */
+	public boolean logEvents = true;
 	/**
 	 * How many days of conversation are kept on disk.
 	 *

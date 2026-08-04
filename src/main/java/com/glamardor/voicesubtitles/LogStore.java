@@ -221,7 +221,11 @@ final class LogStore {
 		return "{\"t\":" + entry.time()
 				+ ",\"id\":\"" + entry.speaker()
 				+ "\",\"n\":\"" + escape(entry.name())
-				+ "\",\"s\":\"" + (entry.source() == SubtitleFeed.Source.CHAT ? "chat" : "voice")
+				+ "\",\"s\":\"" + switch (entry.source()) {
+					case CHAT -> "chat";
+					case EVENT -> "event";
+					case VOICE -> "voice";
+				}
 				+ "\",\"x\":\"" + escape(entry.text()) + "\"}";
 	}
 
@@ -232,8 +236,12 @@ final class LogStore {
 			String name = unescape(quoted(line, "\"n\":"));
 			String source = quoted(line, "\"s\":");
 			String text = unescape(quoted(line, "\"x\":"));
-			return new SubtitleLog.Entry(time, id, name,
-					"chat".equals(source) ? SubtitleFeed.Source.CHAT : SubtitleFeed.Source.VOICE, text);
+			SubtitleFeed.Source kind = switch (source) {
+				case "chat" -> SubtitleFeed.Source.CHAT;
+				case "event" -> SubtitleFeed.Source.EVENT;
+				default -> SubtitleFeed.Source.VOICE;
+			};
+			return new SubtitleLog.Entry(time, id, name, kind, text);
 		} catch (Exception e) {
 			// A half-written last line after a crash is not worth a stack trace.
 			return null;

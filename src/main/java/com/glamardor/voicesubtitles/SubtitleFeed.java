@@ -38,7 +38,9 @@ public final class SubtitleFeed {
 	/** Where a line came from. */
 	public enum Source {
 		VOICE,
-		CHAT
+		CHAT,
+		/** Something that happened rather than was said; log only, never drawn. */
+		EVENT
 	}
 
 	/** One utterance by one speaker. */

@@ -179,5 +179,13 @@
 	"voice_subtitles.option.log_keep_days.tooltip": "How long before old entries are deleted. Zero never deletes them.",
 	"voice_subtitles.log.clear.confirm": "Press again to delete the log",
 	"voice_subtitles.unit.days": "%s d",
-	"voice_subtitles.unit.forever": "keep forever"
+	"voice_subtitles.unit.forever": "keep forever",
+	"voice_subtitles.value.placement.log_only": "Log only",
+	"voice_subtitles.log.filter.source.event": "events",
+	"voice_subtitles.option.log_events": "Note what happens",
+	"voice_subtitles.option.log_events.tooltip": "Marks joining and leaving a server, deaths and closing the game in the log. Without them the log is a wall of speech with no idea where or when any of it happened.",
+	"voice_subtitles.event.join": "Joined: %s",
+	"voice_subtitles.event.leave": "Left: %s",
+	"voice_subtitles.event.quit": "Closed the game",
+	"voice_subtitles.event.death": "Died"
 }
