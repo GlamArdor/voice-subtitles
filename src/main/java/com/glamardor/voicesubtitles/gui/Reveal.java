@@ -23,7 +23,12 @@ final class Reveal {
 		Path absolute = file.toAbsolutePath();
 		try {
 			String[] command = switch (Util.getOperatingSystem()) {
-				case WINDOWS -> new String[]{"explorer.exe", "/select," + absolute};
+				// Handed to the shell as one string on purpose. Explorer wants
+				// /select,"the path" with the quotes around the path alone, and
+				// Java quotes any argument containing a space as a whole, which
+				// turns it into "/select,the path" - a form Explorer does not
+				// understand and answers by opening Documents instead.
+				case WINDOWS -> new String[]{"cmd.exe", "/c", "explorer.exe /select,\"" + absolute + "\""};
 				case OSX -> new String[]{"open", "-R", absolute.toString()};
 				default -> null;
 			};
