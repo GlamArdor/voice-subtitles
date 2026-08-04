@@ -108,7 +108,11 @@ public class FallbackConfigScreen extends Screen {
 
 		list.addHeader(category("log"));
 		list.addWidget(toggle("keep_log", () -> config.keepLog, v -> config.keepLog = v));
-		list.addWidget(plainSlider("log_capacity", config.logCapacity, 50, 5000, v -> config.logCapacity = v));
+		list.addWidget(plainSlider("log_capacity", config.logCapacity, 50, 20000, v -> config.logCapacity = v));
+		list.addWidget(new OptionSlider("log_keep_days", config.logKeepDays, 0, 365,
+				v -> config.logKeepDays = v,
+				v -> v == 0 ? Text.translatable("voice_subtitles.unit.forever")
+						: Text.translatable("voice_subtitles.unit.days", v)));
 		list.addWidget(ButtonWidget.builder(Text.translatable("voice_subtitles.log.open"),
 						button -> MinecraftClient.getInstance().setScreen(new SubtitleLogScreen(this)))
 				.dimensions(0, 0, ROW_WIDTH, 20).build());

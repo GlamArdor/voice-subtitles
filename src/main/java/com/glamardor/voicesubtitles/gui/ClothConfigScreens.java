@@ -140,8 +140,10 @@ final class ClothConfigScreens {
 		// ── Conversation log ────────────────────────────────────────────────
 		ConfigCategory log = category(builder, "log");
 		log.addEntry(toggle(entries, "keep_log", config.keepLog, defaults.keepLog, v -> config.keepLog = v));
-		log.addEntry(slider(entries, "log_capacity", config.logCapacity, defaults.logCapacity, 50, 5000,
+		log.addEntry(slider(entries, "log_capacity", config.logCapacity, defaults.logCapacity, 50, 20000,
 				v -> config.logCapacity = v, v -> Text.literal(String.valueOf(v))));
+		log.addEntry(slider(entries, "log_keep_days", config.logKeepDays, defaults.logKeepDays, 0, 365,
+				v -> config.logKeepDays = v, ClothConfigScreens::days));
 		log.addEntry(entries.startTextDescription(Text.translatable("voice_subtitles.log.hint")).build());
 
 		// ── Above the head ──────────────────────────────────────────────────
@@ -182,6 +184,12 @@ final class ClothConfigScreens {
 
 	private static Text millis(int value) {
 		return Text.translatable("voice_subtitles.unit.millis", value);
+	}
+
+	private static Text days(int value) {
+		return value == 0
+				? Text.translatable("voice_subtitles.unit.forever")
+				: Text.translatable("voice_subtitles.unit.days", value);
 	}
 
 	private static Text seconds(int millis) {

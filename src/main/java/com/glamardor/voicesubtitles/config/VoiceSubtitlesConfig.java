@@ -146,7 +146,15 @@ public class VoiceSubtitlesConfig {
 	/** Keep what has been said in memory, so it can be read back and exported. */
 	public boolean keepLog = true;
 	/** How many lines the log holds before the oldest ones are dropped. */
-	public int logCapacity = 500;
+	public int logCapacity = 2000;
+	/**
+	 * How many days of conversation are kept on disk.
+	 *
+	 * <p>The log is written out as it happens so it survives closing the game,
+	 * which is the only way it is any use: what somebody wants to look up is
+	 * what was said a while ago, and "a while" routinely spans a restart.
+	 */
+	public int logKeepDays = 14;
 
 	// ── Distance ─────────────────────────────────────────────────────────────
 	/**
@@ -261,6 +269,8 @@ public class VoiceSubtitlesConfig {
 		overHeadHeight = clamp(overHeadHeight, 0, 200);
 		overHeadWidth = clamp(overHeadWidth, 60, 400);
 		maxRecognizers = clamp(maxRecognizers, 1, 8);
+		logCapacity = clamp(logCapacity, 50, 20000);
+		logKeepDays = clamp(logKeepDays, 0, 365);
 		if (modelId == null) modelId = "";
 	}
 

@@ -34,6 +34,26 @@ public final class SubtitleLog {
 	private SubtitleLog() {
 	}
 
+	/**
+	 * Brings back what was said before the game was last closed, and drops day
+	 * files older than the player asked to keep.
+	 */
+	public static void init() {
+		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
+		LogStore.prune(cfg.logKeepDays);
+		if (!cfg.keepLog) {
+			return;
+		}
+		List<Entry> previous = LogStore.load(Math.max(cfg.logCapacity, 1));
+		if (previous.isEmpty()) {
+			return;
+		}
+		synchronized (ENTRIES) {
+			ENTRIES.addAll(0, previous);
+		}
+		VoiceSubtitles.LOGGER.info("Conversation log: {} lines carried over", previous.size());
+	}
+
 	/** One finished line. The name is captured as it was shown at the time. */
 	public record Entry(long time, UUID speaker, String name, SubtitleFeed.Source source, String text) {
 	}
@@ -58,6 +78,9 @@ public final class SubtitleLog {
 				ENTRIES.remove(0);
 			}
 		}
+		// Written straight away rather than at shutdown: a game that crashes
+		// still ought to leave the conversation behind.
+		LogStore.append(entry);
 	}
 
 	/** @return every entry, oldest first. */
@@ -71,8 +94,15 @@ public final class SubtitleLog {
 		return ENTRIES.size();
 	}
 
+	/** Empties the log, on screen and on disk. */
 	public static void clear() {
 		ENTRIES.clear();
+		LogStore.deleteAll();
+	}
+
+	/** Gives the writer a moment to catch up, for use when the game is closing. */
+	public static void flush() {
+		LogStore.flush();
 	}
 
 	/** @return the time of day an entry was spoken, {@code HH:mm:ss}. */

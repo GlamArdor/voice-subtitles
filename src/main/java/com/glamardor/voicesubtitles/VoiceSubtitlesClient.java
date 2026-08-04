@@ -8,6 +8,7 @@ import com.glamardor.voicesubtitles.hud.SubtitleHud;
 import com.glamardor.voicesubtitles.speech.DownloadState;
 import com.glamardor.voicesubtitles.speech.SpeechRecognition;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -40,7 +41,17 @@ public class VoiceSubtitlesClient implements ClientModInitializer {
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			SubtitleFeed.clear();
 			SpeakerTracker.clear();
+			// Leaving a server files whatever was still on screen; give the
+			// writer a moment so none of it is lost if the game closes next.
+			SubtitleLog.flush();
 		});
+
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+			SubtitleFeed.clear();
+			SubtitleLog.flush();
+		});
+
+		SubtitleLog.init();
 
 		SubtitleCommands.register();
 		Keybinds.register();

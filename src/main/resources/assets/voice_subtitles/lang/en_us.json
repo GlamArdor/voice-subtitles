@@ -94,9 +94,9 @@
 	"voice_subtitles.option.show_direction": "Show the direction",
 	"voice_subtitles.option.show_direction.tooltip": "An arrow in front of the line shows where the speaker is standing: up for straight ahead, down for behind you. Captions carry the words but not the side the voice came from.",
 	"voice_subtitles.option.keep_log": "Keep a log",
-	"voice_subtitles.option.keep_log.tooltip": "Holds what was said in memory so it can be read back. Nothing is written to disk until you save a file yourself.",
+	"voice_subtitles.option.keep_log.tooltip": "Holds what was said so it can be read back. Written to disk, in config/voice_subtitles/history, so it survives closing the game. Never sent anywhere.",
 	"voice_subtitles.option.log_capacity": "Log depth",
-	"voice_subtitles.option.log_capacity.tooltip": "How many lines are kept before the oldest ones are dropped.",
+	"voice_subtitles.option.log_capacity.tooltip": "How many recent lines are kept to hand for reading and searching.",
 	"voice_subtitles.option.hide_with_hud": "Hide with the HUD (F1)",
 	"voice_subtitles.option.hide_with_hud.tooltip": "By default subtitles stay on screen when the interface is hidden – someone reading the conversation instead of hearing it should not lose it to a screenshot.",
 	"voice_subtitles.option.over_head_height": "Height above the head",
@@ -174,5 +174,10 @@
 	"voice_subtitles.log.filter.newest": "newest first",
 	"voice_subtitles.log.filter.oldest": "oldest first",
 	"voice_subtitles.time.hours": "%s h",
-	"voice_subtitles.time.days": "%s d"
+	"voice_subtitles.time.days": "%s d",
+	"voice_subtitles.option.log_keep_days": "Keep on disk for",
+	"voice_subtitles.option.log_keep_days.tooltip": "How long before old entries are deleted. Zero never deletes them.",
+	"voice_subtitles.log.clear.confirm": "Press again to delete the log",
+	"voice_subtitles.unit.days": "%s d",
+	"voice_subtitles.unit.forever": "keep forever"
 }

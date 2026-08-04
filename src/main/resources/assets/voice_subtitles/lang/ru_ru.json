@@ -94,9 +94,9 @@
 	"voice_subtitles.option.show_direction": "Показывать направление",
 	"voice_subtitles.option.show_direction.tooltip": "Стрелка перед репликой показывает, где стоит говорящий: вверх – прямо перед вами, вниз – за спиной. Субтитры передают слова, но не сторону, с которой прозвучал голос.",
 	"voice_subtitles.option.keep_log": "Вести журнал",
-	"voice_subtitles.option.keep_log.tooltip": "Сохранять сказанное в памяти игры, чтобы прочитать позже. На диск ничего не пишется, пока вы сами не сохраните файл.",
+	"voice_subtitles.option.keep_log.tooltip": "Сохранять сказанное, чтобы прочитать позже. Журнал пишется на диск, в config/voice_subtitles/history, и переживает выход из игры. Никуда не отправляется.",
 	"voice_subtitles.option.log_capacity": "Глубина журнала",
-	"voice_subtitles.option.log_capacity.tooltip": "Сколько реплик хранится, прежде чем самые старые вытесняются.",
+	"voice_subtitles.option.log_capacity.tooltip": "Сколько последних реплик держать под рукой для показа и поиска.",
 	"voice_subtitles.option.hide_with_hud": "Прятать по F1",
 	"voice_subtitles.option.hide_with_hud.tooltip": "По умолчанию субтитры остаются на экране при скрытом интерфейсе – тому, кто читает разговор вместо того, чтобы слышать, терять его на скриншоте ни к чему.",
 	"voice_subtitles.option.over_head_height": "Высота над головой",
@@ -174,5 +174,10 @@
 	"voice_subtitles.log.filter.newest": "новые сверху",
 	"voice_subtitles.log.filter.oldest": "старые сверху",
 	"voice_subtitles.time.hours": "%s ч",
-	"voice_subtitles.time.days": "%s сут"
+	"voice_subtitles.time.days": "%s сут",
+	"voice_subtitles.option.log_keep_days": "Хранить на диске",
+	"voice_subtitles.option.log_keep_days.tooltip": "Через сколько дней старые записи удаляются. Ноль – не удалять никогда.",
+	"voice_subtitles.log.clear.confirm": "Нажмите ещё раз, чтобы удалить журнал",
+	"voice_subtitles.unit.days": "%s дн.",
+	"voice_subtitles.unit.forever": "не удалять"
 }

@@ -65,6 +65,8 @@ public class SubtitleLogScreen extends Screen {
 	private SubtitleFeed.Source source;
 	private int windowIndex;
 	private boolean newestFirst;
+	/** Set by the first press of "clear"; the second one actually does it. */
+	private boolean clearArmed;
 
 	public SubtitleLogScreen(@Nullable Screen parent) {
 		super(Text.translatable("voice_subtitles.log.title"));
@@ -110,8 +112,15 @@ public class SubtitleLogScreen extends Screen {
 		export.setTooltip(Tooltip.of(Text.translatable("voice_subtitles.log.export.tooltip")));
 		addDrawableChild(export);
 
+		// Asked twice, because this now deletes the files as well as the list.
 		addDrawableChild(ButtonWidget.builder(Text.translatable("voice_subtitles.log.clear"), b -> {
+			if (!clearArmed) {
+				clearArmed = true;
+				status = Text.translatable("voice_subtitles.log.clear.confirm").formatted(Formatting.YELLOW);
+				return;
+			}
 			SubtitleLog.clear();
+			clearArmed = false;
 			status = Text.translatable("voice_subtitles.log.cleared").formatted(Formatting.GRAY);
 			clearAndInit();
 		}).dimensions(x + buttonWidth + spacing, y, buttonWidth, 20).build());
