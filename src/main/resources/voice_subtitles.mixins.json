@@ -3,6 +3,7 @@
 	"package": "com.glamardor.voicesubtitles.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"ChatCommandMixin",
 		"InGameHudMixin",
 		"ScreenMixin"
 	],

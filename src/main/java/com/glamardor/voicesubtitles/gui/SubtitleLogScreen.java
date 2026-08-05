@@ -447,7 +447,7 @@ public class SubtitleLogScreen extends Screen {
 			// The bar is claimed before anything else is asked. Handing the press
 			// to the widget first meant it answered "mine" and then moved
 			// nothing, and our own handling never got its turn.
-			if (button == 0 && isMouseOver(mouseX, mouseY) && mouseX >= getScrollbarX()) {
+			if (button == 0 && overScrollbar(mouseX, mouseY)) {
 				draggingBar = true;
 				scrollTo(mouseY);
 				return true;
@@ -459,6 +459,21 @@ public class SubtitleLogScreen extends Screen {
 			// here because the list is never asked otherwise: rows of plain text
 			// accept no clicks for a drag to start from.
 			return button == 0 && isMouseOver(mouseX, mouseY);
+		}
+
+		/**
+		 * True when the pointer is on the little bar.
+		 *
+		 * <p>Tested against the bar's own position rather than against the list's,
+		 * because the two are not the same: the bar is drawn at the right edge of
+		 * the rows plus eight pixels, which lands just outside the widget itself.
+		 * Asking whether the pointer was inside the list therefore answered no
+		 * for every press on the bar, which is why dragging it did nothing.
+		 */
+		private boolean overScrollbar(double mouseX, double mouseY) {
+			int barX = getScrollbarX();
+			return mouseX >= barX - 1 && mouseX <= barX + 7
+					&& mouseY >= getY() && mouseY <= getY() + getHeight();
 		}
 
 		/** Puts the view where the pointer is, proportionally. */

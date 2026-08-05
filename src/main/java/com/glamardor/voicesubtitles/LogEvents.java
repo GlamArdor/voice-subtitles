@@ -4,7 +4,6 @@ import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.DeathScreen;
@@ -92,16 +91,31 @@ public final class LogEvents {
 		ClientReceiveMessageEvents.CHAT.register((message, signed, sender, params, timestamp) ->
 				SubtitleLog.recordChat(message));
 
-		// The command as it was typed. Reliable, unlike guessing from the reply.
-		ClientSendMessageEvents.COMMAND.register(command -> {
-			String name = command.split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
-			if (ROLEPLAY.contains(name)) {
-				lastRoleplayAt = System.currentTimeMillis();
-				SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.command", "/" + command));
-			}
-		});
-
+		// Commands are not taken from a Fabric event but from the method they all
+		// go through; see ChatCommandMixin and onCommandSent below.
 		ClientTickEvents.END_CLIENT_TICK.register(LogEvents::tick);
+	}
+
+	/**
+	 * Files a command the player sent.
+	 *
+	 * <p>Called from the one method every chat command goes through, rather than
+	 * from Fabric's send event, which was quietly letting most of them past.
+	 *
+	 * @param command as typed, without its leading slash
+	 */
+	public static void onCommandSent(String command) {
+		if (command == null || command.isBlank()) {
+			return;
+		}
+		String name = command.split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
+		if (SECRET.contains(name)) {
+			return;
+		}
+		if (ROLEPLAY.contains(name)) {
+			lastRoleplayAt = System.currentTimeMillis();
+		}
+		SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.command", "/" + command));
 	}
 
 	/**
