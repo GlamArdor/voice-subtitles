@@ -84,6 +84,16 @@ public final class SpeechModels {
 		// and seconds rather than a minute to load.
 		offline("ru-big", "Русский (большая ONNX)", "sherpa-onnx-zipformer-ru-2025-04-20", 237);
 		offline("ru-big-int8", "Русский (большая ONNX, int8)", "sherpa-onnx-zipformer-ru-int8-2025-04-20", 57);
+
+		// English, and the same idea: NVIDIA's Parakeet writes punctuation and
+		// capitals of its own accord, and was trained on the way people actually
+		// talk rather than on read-aloud books, which is what the older English
+		// models in this catalogue were.
+		offline("en-fast", "English (Parakeet)", "sherpa-onnx-nemo-parakeet_tdt_transducer_110m-en-36000-int8", 103);
+		// Sold as English and in fact good for twenty-five European languages,
+		// Russian among them: worth knowing before anybody downloads two models
+		// to cover a server that speaks both.
+		offline("en-giga", "English + 24 more (Parakeet 0.6B)", "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8", 465);
 	}
 
 	private SpeechModels() {
@@ -125,6 +135,7 @@ public final class SpeechModels {
 	public static String defaultFor(String languageCode) {
 		String preferred = switch (languageCode) {
 			case "ru" -> "ru-giga-rnnt";
+			case "en" -> "en-fast";
 			default -> languageCode;
 		};
 		return CATALOGUE.containsKey(preferred) ? preferred : languageCode;

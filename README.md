@@ -24,34 +24,54 @@ Everything runs on your own machine. Nothing is recorded, nothing is uploaded, a
 
 ## Speech recognition
 
-Recognition runs entirely on your machine, through [Vosk](https://alphacephei.com/vosk/).
+Recognition runs entirely on your machine, through [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) or [Vosk](https://alphacephei.com/vosk/), whichever the chosen model needs.
 
-**This mod downloads a file after installation.** Recognition needs a language model, and models are far too large to ship inside the mod – the Russian one alone is 45 MB. The first time it is needed, the mod fetches the model matching your game language from `alphacephei.com` (the official Vosk model repository, Apache-2.0 licensed) and unpacks it into `config/voice_subtitles/models`. That is the only network request the mod ever makes: nothing is uploaded, nothing is reported, and no audio ever leaves your machine.
+**This mod downloads what it needs after installation.** A recognition engine and a language model are both far too large to ship inside a 3 MB mod, so the first time one is needed the mod fetches it: the engine from the project's own GitHub releases, the model from there or from `alphacephei.com`. Both land in `config/voice_subtitles`. Those are the only network requests the mod ever makes. Nothing is uploaded, nothing is reported, and no audio ever leaves your machine.
 
-If you would rather it did not: turn off **Download the model automatically** in the settings and either fetch a model yourself with `/vsub model download <id>`, or unpack one from [the Vosk model list](https://alphacephei.com/vosk/models) into that folder by hand. Without a model the mod still shows who is speaking, just without the words.
+The engine is executable code rather than data, so its archive is checked against a SHA-256 hash built into the mod before anything is unpacked or loaded, and refused if it does not match.
 
-Pick your language once:
+If you would rather it did not download anything: turn off **Download the model automatically** in the settings, and fetch what you want by hand with `/vsub model download <id>`. Without a model the mod still shows who is speaking, just without the words.
 
 ```
 /vsub model list
-/vsub model download ru
+/vsub model download ru-giga-rnnt
+/vsub model use ru-giga-rnnt
 ```
 
-Words appear as they are recognised and settle when the sentence ends. If no model is installed, or the machine cannot keep up, captions still show who is speaking – just without the words.
+### The models
 
-### Accuracy, and the bigger model
+Two kinds. **Streaming** models type the words out as they are spoken. **Whole-utterance** models look both ways through a sentence before deciding what a word was, which is where their accuracy comes from and why a line arrives a second or so after it was said; the mod re-reads the audio as it accumulates, so the caption still grows while somebody talks.
 
-The default model is the small one – around 45 MB, loads in a second, costs almost nothing to run. It is also the least accurate of the two: on spontaneous speech through a compressed voice channel, expect roughly every third word to come out wrong. The gist of a sentence reads fine; a word-for-word transcript it is not. Character names are the worst case – a model trained on ordinary Russian has never seen "Элиандрэль фон Сильверхейм" and will never produce it.
+Russian:
 
-If you want better and can afford it, there is a large model:
+| id | size | kind | notes |
+|---|---|---|---|
+| `ru-giga-rnnt` | 162 MB | whole utterance | **the default.** GigaAM v3 by Sber, the most accurate here, and it writes punctuation and capitals of its own accord |
+| `ru-giga` | 156 MB | whole utterance | the same model in its CTC form: quicker to load, a little rougher on word endings |
+| `ru-big` | 237 MB | whole utterance | the big Vosk model exported to ONNX: same lineage as `ru-large`, seconds to load instead of a minute |
+| `ru-big-int8` | 57 MB | whole utterance | the same, quantised |
+| `ru-tone` | 123 MB | streaming | T-one, trained on telephone speech; understands a compressed channel but drops word endings |
+| `ru-stream` | 85 MB | streaming | the small Vosk model in ONNX form |
+| `ru-fast` | 23 MB | streaming | the same, quantised: the lightest thing here |
+| `ru` | 45 MB | streaming | Vosk, the original small model |
+| `ru-large` | 1.8 GB | streaming | Vosk at its best, and a minute to load. `ru-big-int8` is the same accuracy for a fortieth of the size |
 
-```
-/vsub model download ru-large
-```
+English:
 
-**Read this before you do.** It is **1.8 GB** to download and unpack, and it wants roughly the same again in memory, on top of whatever Minecraft is already using. Loading it takes noticeably longer, and on a modest machine you will hear the fans: after switching settings or reloading the model, captions can lag behind the speech for a while until it settles. In exchange, accuracy roughly doubles – from about a third of words wrong down to a fifth, and markedly better on clear speech.
+| id | size | kind | notes |
+|---|---|---|---|
+| `en-fast` | 103 MB | whole utterance | **the default.** NVIDIA Parakeet, punctuation and capitals included, trained on the way people talk rather than on read-aloud books |
+| `en-giga` | 465 MB | whole utterance | Parakeet 0.6B: more accurate again, and in fact **25 European languages**, Russian and Ukrainian among them |
+| `en` | 40 MB | streaming | Vosk, the original small model |
+| `en-large` | 1.8 GB | streaming | Vosk at its best |
 
-The recommendation stands as it is: **the small model for everyone, the large one for those who want it sharper and have the machine for it.** Nothing about the mod changes between them except the model in use, so switching back is one command.
+Other languages, all Vosk: `uk`, `de`, `fr`, `es`, `pl`, `it`, `ja`. For most of them `en-giga` is worth trying instead, since it covers them too.
+
+### How accurate, honestly
+
+The small streaming models get roughly every third word wrong on spontaneous speech through a compressed voice channel. The gist reads fine; a word-for-word transcript it is not. Character names are the worst case: a model trained on ordinary speech has never seen "Элиандрэль фон Сильверхейм" and will never produce it.
+
+The whole-utterance models are markedly better and cost a second of delay. That is the trade this mod defaults to, because a caption that is right and a moment late beats one that is instant and wrong.
 
 ## Commands
 
