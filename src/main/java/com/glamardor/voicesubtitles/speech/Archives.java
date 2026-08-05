@@ -89,8 +89,10 @@ final class Archives {
 		return hex.toString();
 	}
 
-	static void extractZip(Path archive, Path target) throws IOException {
+	/** Told how much has been unpacked so far, for the half of the wait after the download. */
+	static void extractZip(Path archive, Path target, Progress progress) throws IOException {
 		Path root = target.toAbsolutePath().normalize();
+		long written = 0L;
 		try (ZipInputStream zip = new ZipInputStream(Files.newInputStream(archive))) {
 			ZipEntry entry;
 			while ((entry = zip.getNextEntry()) != null) {
@@ -99,15 +101,17 @@ final class Archives {
 					Files.createDirectories(destination);
 				} else {
 					Files.createDirectories(destination.getParent());
-					Files.copy(zip, destination, StandardCopyOption.REPLACE_EXISTING);
+					written += Files.copy(zip, destination, StandardCopyOption.REPLACE_EXISTING);
+					progress.update(written, -1L);
 				}
 				zip.closeEntry();
 			}
 		}
 	}
 
-	static void extractTarBz2(Path archive, Path target) throws IOException {
+	static void extractTarBz2(Path archive, Path target, Progress progress) throws IOException {
 		Path root = target.toAbsolutePath().normalize();
+		long written = 0L;
 		try (InputStream raw = Files.newInputStream(archive);
 		     BZip2CompressorInputStream bz2 = new BZip2CompressorInputStream(raw, true);
 		     TarArchiveInputStream tar = new TarArchiveInputStream(bz2)) {
@@ -122,7 +126,8 @@ final class Archives {
 					Files.createDirectories(destination);
 				} else {
 					Files.createDirectories(destination.getParent());
-					Files.copy(tar, destination, StandardCopyOption.REPLACE_EXISTING);
+					written += Files.copy(tar, destination, StandardCopyOption.REPLACE_EXISTING);
+					progress.update(written, -1L);
 				}
 			}
 		}

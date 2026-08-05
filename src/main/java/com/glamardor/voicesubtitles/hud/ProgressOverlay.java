@@ -55,6 +55,11 @@ public final class ProgressOverlay {
 	 */
 	private static Text describe(DownloadState.Snapshot download) {
 		String done = megabytes(download.read());
+		if (download.installing()) {
+			// The bytes are in; what is left is checking and unpacking them, and
+			// for a large model that is a wait of its own.
+			return Text.translatable("voice_subtitles.download.installing", download.label(), done);
+		}
 		if (download.total() <= 0L) {
 			// The server did not say how big it is; showing what has arrived is
 			// still better than a bar pretending to know.

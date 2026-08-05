@@ -20,12 +20,14 @@ public final class DownloadState {
 	private static volatile long total;
 	private static volatile long startedAt;
 	private static volatile boolean active;
+	/** True once the bytes are in and the slow part starts: checking and unpacking. */
+	private static volatile boolean installing;
 
 	private DownloadState() {
 	}
 
 	/** One reading of the state, so the renderer sees consistent numbers. */
-	public record Snapshot(Text label, long read, long total, long elapsedMillis) {
+	public record Snapshot(Text label, long read, long total, long elapsedMillis, boolean installing) {
 
 		/** @return 0–1, or -1 when the server did not say how big the file is */
 		public float fraction() {
@@ -57,6 +59,21 @@ public final class DownloadState {
 		total = -1L;
 		startedAt = System.currentTimeMillis();
 		active = true;
+		installing = false;
+	}
+
+	/**
+	 * The download is done and the unpacking has begun.
+	 *
+	 * <p>Worth saying out loud: a checksum over half a gigabyte and unpacking it
+	 * take long enough that a bar sitting at 100 % looks like a bar that has
+	 * stopped, and the natural response to that is to close the game.
+	 */
+	static void installing() {
+		installing = true;
+		read = 0L;
+		total = -1L;
+		startedAt = System.currentTimeMillis();
 	}
 
 	static void update(long bytesRead, long bytesTotal) {
@@ -77,6 +94,6 @@ public final class DownloadState {
 		if (!active) {
 			return null;
 		}
-		return new Snapshot(label, read, total, System.currentTimeMillis() - startedAt);
+		return new Snapshot(label, read, total, System.currentTimeMillis() - startedAt, installing);
 	}
 }

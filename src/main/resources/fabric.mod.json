@@ -3,7 +3,7 @@
 	"id": "voice_subtitles",
 	"version": "${version}",
 	"name": "Voice Subtitles",
-	"description": "Live subtitles for Simple Voice Chat. Shows who is speaking and what they say, taking the roleplay name straight from the player list. Built so that deaf and hard-of-hearing players can follow proximity voice chat, and so that anyone playing without sound can too. Recognition is offline and client-side: no audio ever leaves your machine and nothing is uploaded anywhere. On first use the mod downloads a Vosk speech model (about 45 MB) from alphacephei.com; this can be turned off, and models can be installed by hand instead. A larger, markedly more accurate model is available for those who want it – it costs 1.8 GB of disk and about as much memory. Thanks to Contik for testing.",
+	"description": "Live subtitles for Simple Voice Chat. Shows who is speaking and what they say, taking the roleplay name straight from the player list. Built so that deaf and hard-of-hearing players can follow proximity voice chat, and so that anyone playing without sound can too. Recognition is offline and client-side: no audio ever leaves your machine and nothing is uploaded anywhere. The mod itself is 3 MB; on first use it downloads a recognition engine (sherpa-onnx or Vosk) and a language model for the language you play in, checking the engine against a built-in hash before loading it. Both can be turned off and installed by hand instead. Keeps a searchable conversation log on your own disk. Thanks to Contik for testing.",
 	"authors": [
 		"Glam_Ardor"
 	],

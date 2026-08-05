@@ -179,10 +179,11 @@ public final class SpeechModels {
 		Path archive = models.resolve(entry.folder() + (entry.isTarBz2() ? ".tar.bz2" : ".zip"));
 
 		Archives.download(entry.url(), archive, progress);
+		DownloadState.installing();
 		if (entry.isTarBz2()) {
-			Archives.extractTarBz2(archive, models);
+			Archives.extractTarBz2(archive, models, progress);
 		} else {
-			Archives.extractZip(archive, models);
+			Archives.extractZip(archive, models, progress);
 		}
 		Files.deleteIfExists(archive);
 		VoiceSubtitles.LOGGER.info("Model {} installed at {}", entry.id(), pathOf(entry));

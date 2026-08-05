@@ -99,18 +99,36 @@ Thanks to **Contik** for testing.
 
 ## Third-party components
 
+The mod itself is about 3 MB. Everything heavy is fetched when it is first needed.
+
 Bundled inside the mod jar:
 
-- [Vosk](https://github.com/alphacep/vosk-api) by Alpha Cephei Inc – Apache License 2.0
 - [JNA](https://github.com/java-native-access/jna) – Apache License 2.0 / LGPL 2.1+
 - [Apache Commons Compress](https://commons.apache.org/proper/commons-compress/) – Apache License 2.0
-- The Java API of [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) by Xiaomi Corporation – Apache License 2.0, copied from tag v1.13.4; see `src/main/java/com/k2fsa/sherpa/onnx/README.md`
+- The Java API of [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) by Xiaomi Corporation – Apache License 2.0, copied from tag v1.13.4
+- The Java API of [Vosk](https://github.com/alphacep/vosk-api) by Alpha Cephei Inc – Apache License 2.0, copied from tag v0.3.45
 
-Downloaded on demand:
+Downloaded on demand, and only what you use:
 
-- [Vosk speech models](https://alphacephei.com/vosk/models) – Apache License 2.0
-- [sherpa-onnx models](https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models) – Apache License 2.0
-- The **sherpa-onnx native library** for your platform, 7–30 MB, from the project's own GitHub releases, but only if you choose a model that runs on it. This one is executable code rather than data, so the archive is checked against a SHA-256 hash built into the mod before it is unpacked or loaded, and it is refused if it does not match.
+- The **recognition engine** for your platform: [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) (7–30 MB) or [Vosk](https://github.com/alphacep/vosk-api) (25 MB), both Apache License 2.0. This is executable code rather than data, so the archive is checked against a SHA-256 hash built into the mod before it is unpacked or loaded, and refused if it does not match.
+- The **model** you chose:
+  - [GigaAM](https://github.com/salute-developers/GigaAM) by Sber – MIT
+  - [Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) by NVIDIA – CC BY 4.0
+  - [T-one](https://github.com/voicekit-team/T-one) by T-Bank – Apache License 2.0
+  - [Vosk models](https://alphacephei.com/vosk/models) – Apache License 2.0
+
+## Where things are kept
+
+Everything lives under `config/voice_subtitles`:
+
+| | |
+|---|---|
+| `models/` | the language models you downloaded |
+| `native/` | the recognition engines |
+| `history/` | the conversation log, one file per day |
+| `logs/` | anything you saved from the log screen by hand |
+
+The conversation log is written as you play so it survives closing the game, and kept for a fortnight by default. It never leaves your machine. Both the keeping and the keeping-for-how-long are settings, and emptying it from the log screen deletes the files too.
 
 ## Licence
 

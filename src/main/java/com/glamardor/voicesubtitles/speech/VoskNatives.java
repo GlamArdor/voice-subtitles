@@ -123,6 +123,7 @@ public final class VoskNatives {
 		Path archive = dir.resolve("vosk-" + VERSION + ".jar");
 
 		Archives.download(URL, archive, progress);
+		DownloadState.installing();
 		String actual = Archives.sha256(archive);
 		if (!actual.equalsIgnoreCase(SHA256)) {
 			Files.deleteIfExists(archive);
@@ -130,6 +131,7 @@ public final class VoskNatives {
 					+ ", got " + actual);
 		}
 
+		long unpacked = 0L;
 		try (ZipFile zip = new ZipFile(archive.toFile())) {
 			for (String wanted : files) {
 				ZipEntry entry = zip.getEntry(wanted);
@@ -138,7 +140,8 @@ public final class VoskNatives {
 				}
 				try (InputStream in = zip.getInputStream(entry);
 				     OutputStream out = Files.newOutputStream(dir.resolve(nameOf(wanted)))) {
-					in.transferTo(out);
+					unpacked += in.transferTo(out);
+					progress.update(unpacked, -1L);
 				}
 			}
 		}

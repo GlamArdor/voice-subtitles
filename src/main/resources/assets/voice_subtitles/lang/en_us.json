@@ -214,5 +214,6 @@
 	"voice_subtitles.preview.text.1": "This is what a caption looks like: the words appear as the speech is recognised, then the line fades away.",
 	"voice_subtitles.preview.text.2": "Ask for another while this one is still up and you will see both halves of the motion at once.",
 	"voice_subtitles.preview.text.3": "Wrapping width, text size and the darkness of the plate are set in the same place as everything else.",
-	"voice_subtitles.preview.text.4": "A long enough line stays up longer than a short one, so there is time to read it to the end."
+	"voice_subtitles.preview.text.4": "A long enough line stays up longer than a short one, so there is time to read it to the end.",
+	"voice_subtitles.download.installing": "Installing %s: %s MB unpacked, please wait"
 }

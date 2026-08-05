@@ -109,13 +109,14 @@ public final class SherpaNatives {
 		Path archive = root.resolve(build.archiveName());
 
 		Archives.download(build.url(), archive, progress);
+		DownloadState.installing();
 		String actual = Archives.sha256(archive);
 		if (!actual.equalsIgnoreCase(build.sha256())) {
 			Files.deleteIfExists(archive);
 			throw new IOException("Checksum mismatch for " + build.archiveName()
 					+ ": expected " + build.sha256() + ", got " + actual);
 		}
-		Archives.extractTarBz2(archive, root);
+		Archives.extractTarBz2(archive, root, progress);
 		Files.deleteIfExists(archive);
 		VoiceSubtitles.LOGGER.info("sherpa-onnx {} native library installed at {}", VERSION, root.resolve(build.folder()));
 	}
