@@ -374,7 +374,12 @@ public class SubtitleLogScreen extends Screen {
 
 		LogList(MinecraftClient client, int width, int height, int y) {
 			super(client, width, height, y, ROW_HEIGHT);
-			this.rowWidth = width - 12;
+			// Room for the bar. Minecraft puts it at the right edge of the rows
+			// plus eight, and centres the rows in the widget, so rows any wider
+			// than this push the bar past the widget's own edge and under the
+			// filter panel, where nothing can reach it. That is exactly where it
+			// was, which is why dragging it did nothing at all.
+			this.rowWidth = width - 32;
 		}
 
 		void show(List<SubtitleLog.Entry> entries, String highlight) {

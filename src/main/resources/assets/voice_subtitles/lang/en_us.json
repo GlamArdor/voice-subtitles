@@ -184,8 +184,6 @@
 	"voice_subtitles.log.filter.source.event": "events",
 	"voice_subtitles.option.log_events": "Note what happens",
 	"voice_subtitles.option.log_events.tooltip": "Marks joining and leaving a server, deaths and closing the game in the log. Without them the log is a wall of speech with no idea where or when any of it happened.",
-	"voice_subtitles.event.join": "Joined: %s",
-	"voice_subtitles.event.leave": "Left: %s",
 	"voice_subtitles.event.quit": "Closed the game",
 	"voice_subtitles.event.death": "Died",
 	"voice_subtitles.event.command": "Command: %s",
@@ -207,5 +205,9 @@
 	"voice_subtitles.option.log_chat": "Log the whole chat",
 	"voice_subtitles.option.log_chat.tooltip": "Puts everything the chat showed in the log: server announcements, other people's commands, the results of roleplay. Those lines are marked [CHAT].",
 	"voice_subtitles.option.hide_command_results": "Hide command results",
-	"voice_subtitles.option.hide_command_results.tooltip": "Keeps the server's answer to your own roleplay command out of the captions: a dice roll is not speech, and it is already in the chat and in the log."
+	"voice_subtitles.option.hide_command_results.tooltip": "Keeps the server's answer to your own roleplay command out of the captions: a dice roll is not speech, and it is already in the chat and in the log.",
+	"voice_subtitles.event.join.server": "Joined the server: %s",
+	"voice_subtitles.event.leave.server": "Left the server: %s",
+	"voice_subtitles.event.join.world": "Opened the world: %s",
+	"voice_subtitles.event.leave.world": "Left the world: %s"
 }

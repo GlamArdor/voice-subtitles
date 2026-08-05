@@ -184,8 +184,6 @@
 	"voice_subtitles.log.filter.source.event": "события",
 	"voice_subtitles.option.log_events": "Записывать события",
 	"voice_subtitles.option.log_events.tooltip": "Отмечать в журнале заход на сервер и выход с него, смерти и закрытие игры. Без этого журнал — сплошная стена реплик, по которой не понять, где и когда они прозвучали.",
-	"voice_subtitles.event.join": "Зашёл на сервер: %s",
-	"voice_subtitles.event.leave": "Вышел с сервера: %s",
 	"voice_subtitles.event.quit": "Выход из игры",
 	"voice_subtitles.event.death": "Смерть",
 	"voice_subtitles.event.command": "Команда: %s",
@@ -207,5 +205,9 @@
 	"voice_subtitles.option.log_chat": "Записывать весь чат",
 	"voice_subtitles.option.log_chat.tooltip": "Класть в журнал всё, что показал чат: объявления сервера, чужие команды, результаты отыгрыша. Такие строки помечаются [CHAT].",
 	"voice_subtitles.option.hide_command_results": "Прятать результаты команд",
-	"voice_subtitles.option.hide_command_results.tooltip": "Не показывать в субтитрах ответ сервера на вашу собственную команду отыгрыша: бросок кубика это не речь, он и так виден в чате и записан в журнал."
+	"voice_subtitles.option.hide_command_results.tooltip": "Не показывать в субтитрах ответ сервера на вашу собственную команду отыгрыша: бросок кубика это не речь, он и так виден в чате и записан в журнал.",
+	"voice_subtitles.event.join.server": "Зашёл на сервер: %s",
+	"voice_subtitles.event.leave.server": "Вышел с сервера: %s",
+	"voice_subtitles.event.join.world": "Зашёл в мир: %s",
+	"voice_subtitles.event.leave.world": "Вышел из мира: %s"
 }

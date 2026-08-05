@@ -39,13 +39,23 @@ public final class LogEvents {
 	 */
 	private static final Set<String> SECRET = Set.of("login", "reg", "register");
 
+	/**
+	 * Commands that are noise rather than record.
+	 *
+	 * <p>{@code /talking} is sent by another mod every time a chat box opens and
+	 * closes. Nobody typed it and nobody wants to read it back.
+	 */
+	private static final Set<String> NOISE = Set.of("talking");
+
 	/** When a roleplay command was last sent, so its answer can be told apart. */
 	private static volatile long lastRoleplayAt;
 
 	private static long lastDeathAt;
 	private static boolean sawDeathScreen;
-	/** Remembered so leaving can name the server, by which time it is already gone. */
+	/** Remembered so leaving can name the place, by which time it is already gone. */
 	private static String currentPlace = "";
+	/** And whether that place was a world of our own rather than somebody's server. */
+	private static boolean currentWorld;
 
 	private LogEvents() {
 	}
@@ -53,11 +63,18 @@ public final class LogEvents {
 	public static void register() {
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
 			currentPlace = placeOf(client);
-			SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.join", currentPlace));
+			// A world and a server are not the same kind of place, and a log that
+			// calls both "server" makes an evening at home look like an evening
+			// out.
+			currentWorld = client.isInSingleplayer();
+			SubtitleLog.recordEvent(Text.translatable(
+					currentWorld ? "voice_subtitles.event.join.world" : "voice_subtitles.event.join.server",
+					currentPlace));
 		});
 
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-			SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.leave",
+			SubtitleLog.recordEvent(Text.translatable(
+					currentWorld ? "voice_subtitles.event.leave.world" : "voice_subtitles.event.leave.server",
 					currentPlace.isEmpty() ? placeOf(client) : currentPlace));
 			currentPlace = "";
 			sawDeathScreen = false;
@@ -109,7 +126,7 @@ public final class LogEvents {
 			return;
 		}
 		String name = command.split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
-		if (SECRET.contains(name)) {
+		if (SECRET.contains(name) || NOISE.contains(name)) {
 			return;
 		}
 		if (ROLEPLAY.contains(name)) {
