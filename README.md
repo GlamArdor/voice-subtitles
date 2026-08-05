@@ -19,8 +19,18 @@ Everything runs on your own machine. Nothing is recorded, nothing is uploaded, a
 
 - **Distance is visible, not filtered.** Everything the client can hear gets a caption; the further away and the quieter the voice, the fainter its text. Whispers are fainter still. Nothing is ever hidden for being far away.
 - **Where the voice came from,** optionally: a small arrow in front of each line points at the speaker – up for ahead, down for behind you. Off by default.
-- **Text chat too, if you want it** – voice only by default, or voice and chat together, or chat alone.
-- **A conversation log** you can scroll back through and save to a file. Spoken lines come from the recogniser, so treat it as a reminder of the conversation rather than a transcript; text chat lines are exact and marked as such.
+- **Text chat too, if you want it** – voice only by default, or voice and chat together, or either one written to the log and drawn nowhere.
+
+## The conversation log
+
+Scroll back through the evening, search it, and save what the filters are showing to a file.
+
+- **Kept across restarts.** Written as you play, one file per day, held for a fortnight by default, on your disk and nowhere else.
+- **Search and filters:** by text, by speaker, by voice or chat, by how far back, oldest or newest first.
+- **The rest of the evening too:** joining a world or a server, deaths, commands as they were typed, the whole of the chat. Login and registration are never written down; they carry a password.
+- **Sealed.** Each line is encrypted and carries the fingerprint of the one before it, so the file cannot be reworded in a text editor and any tampering is reported rather than shown as though genuine. The key sits on the same machine, so this is not proof of anything to anybody; it turns silent tampering into visible tampering.
+
+Spoken lines come from the recogniser, so treat them as a reminder of the conversation rather than a transcript. Text chat lines are exact and marked as such.
 
 ## Speech recognition
 
@@ -80,12 +90,17 @@ The whole-utterance models are markedly better and cost a second of delay. That 
 | `/vsub color <player> <#RRGGBB\|reset>` | Assigns a colour by hand |
 | `/vsub model list\|download <id>\|use <id>\|status` | Manages recognition models |
 | `/vsub log` | Opens the conversation log |
+| `/vsub preview` | Puts a sample caption on screen, so their look can be set without waiting for somebody to talk |
 
 ## Settings
 
 Mod Menu opens the settings screen: the richer Cloth Config version when Cloth is installed, the built-in one otherwise. Either way `config/voice_subtitles.json` is the source of truth.
 
 Three keys are available under **Voice Subtitles** in the game's controls – turn subtitles on and off, switch between the feed and above the head, and open the conversation log. All three ship unbound: whatever key this mod could claim is a key somebody already uses.
+
+## Alongside other mods
+
+[Absolute Cinema Camera](https://codeberg.org/Glam_Ardor/absolute-cinema-camera) hides the whole interface for its film mode. Subtitles stay, sitting just on top of the bottom matte, because somebody reading the conversation instead of hearing it should not lose it to a camera angle. Nothing to install or switch on, and nothing changes if that mod is not there.
 
 ## Requirements
 
