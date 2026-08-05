@@ -205,5 +205,7 @@
 	"voice_subtitles.option.over_head_name": "Имя над головой",
 	"voice_subtitles.option.over_head_name.tooltip": "Показывать имя говорящего перед его словами.",
 	"voice_subtitles.option.log_chat": "Записывать весь чат",
-	"voice_subtitles.option.log_chat.tooltip": "Класть в журнал всё, что показал чат: объявления сервера, чужие команды, результаты отыгрыша. Такие строки помечаются [CHAT]."
+	"voice_subtitles.option.log_chat.tooltip": "Класть в журнал всё, что показал чат: объявления сервера, чужие команды, результаты отыгрыша. Такие строки помечаются [CHAT].",
+	"voice_subtitles.option.hide_command_results": "Прятать результаты команд",
+	"voice_subtitles.option.hide_command_results.tooltip": "Не показывать в субтитрах ответ сервера на вашу собственную команду отыгрыша: бросок кубика это не речь, он и так виден в чате и записан в журнал."
 }

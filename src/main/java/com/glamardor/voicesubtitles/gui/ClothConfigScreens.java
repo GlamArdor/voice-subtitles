@@ -74,6 +74,8 @@ final class ClothConfigScreens {
 				v -> config.whisperOpacity = v));
 		general.addEntry(toggle(entries, "chat_strip_prefix", config.chatStripPrefix, defaults.chatStripPrefix,
 				v -> config.chatStripPrefix = v));
+		general.addEntry(toggle(entries, "hide_command_results", config.hideCommandResults,
+				defaults.hideCommandResults, v -> config.hideCommandResults = v));
 
 		// ── Speech recognition ──────────────────────────────────────────────
 		ConfigCategory speech = category(builder, "speech");

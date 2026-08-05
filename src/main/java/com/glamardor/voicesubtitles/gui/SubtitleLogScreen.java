@@ -433,6 +433,22 @@ public class SubtitleLogScreen extends Screen {
 		}
 
 		/**
+		 * Takes the click even when no entry wanted it.
+		 *
+		 * <p>Minecraft only sends drag events to whichever widget accepted the
+		 * press, and the rows here are plain text that accepts nothing, so the
+		 * list was never asked about the drag that followed. Saying yes to a
+		 * press inside the list is what makes the pulling below possible.
+		 */
+		@Override
+		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			if (super.mouseClicked(mouseX, mouseY, button)) {
+				return true;
+			}
+			return button == 0 && isMouseOver(mouseX, mouseY);
+		}
+
+		/**
 		 * Lets the list be pulled about with the mouse, not only nudged with the
 		 * wheel: a scrollbar six pixels wide is a poor thing to have to aim at.
 		 */

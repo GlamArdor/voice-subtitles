@@ -205,5 +205,7 @@
 	"voice_subtitles.option.over_head_name": "Name above the head",
 	"voice_subtitles.option.over_head_name.tooltip": "Show the speaker's name in front of their words.",
 	"voice_subtitles.option.log_chat": "Log the whole chat",
-	"voice_subtitles.option.log_chat.tooltip": "Puts everything the chat showed in the log: server announcements, other people's commands, the results of roleplay. Those lines are marked [CHAT]."
+	"voice_subtitles.option.log_chat.tooltip": "Puts everything the chat showed in the log: server announcements, other people's commands, the results of roleplay. Those lines are marked [CHAT].",
+	"voice_subtitles.option.hide_command_results": "Hide command results",
+	"voice_subtitles.option.hide_command_results.tooltip": "Keeps the server's answer to your own roleplay command out of the captions: a dice roll is not speech, and it is already in the chat and in the log."
 }

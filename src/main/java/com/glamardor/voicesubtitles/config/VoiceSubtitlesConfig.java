@@ -257,6 +257,14 @@ public class VoiceSubtitlesConfig {
 	 * since the subtitle prints the name itself.
 	 */
 	public boolean chatStripPrefix = true;
+	/**
+	 * Keep the server's answer to your own roleplay command out of the feed.
+	 *
+	 * <p>A dice roll is not speech. It is in the chat window where it was asked
+	 * for and in the log where it belongs, and repeating it as a caption over
+	 * the world is noise.
+	 */
+	public boolean hideCommandResults = true;
 
 	// ─────────────────────────────────────────────────────────────────────────
 

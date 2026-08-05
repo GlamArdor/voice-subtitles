@@ -31,6 +31,9 @@ public final class LogEvents {
 	/** Roleplay commands worth keeping: an action is as much a line as a spoken one. */
 	private static final Set<String> ROLEPLAY = Set.of("me", "try", "do", "todo", "ame", "ado");
 
+	/** When a roleplay command was last sent, so its answer can be told apart. */
+	private static volatile long lastRoleplayAt;
+
 	private static long lastDeathAt;
 	private static boolean sawDeathScreen;
 	/** Remembered so leaving can name the server, by which time it is already gone. */
@@ -84,6 +87,7 @@ public final class LogEvents {
 		ClientSendMessageEvents.COMMAND.register(command -> {
 			String name = command.split("\\s+", 2)[0].toLowerCase(Locale.ROOT);
 			if (ROLEPLAY.contains(name)) {
+				lastRoleplayAt = System.currentTimeMillis();
 				SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.command", "/" + command));
 			}
 		});
@@ -121,6 +125,14 @@ public final class LogEvents {
 			return client.getServer().getSaveProperties().getLevelName();
 		}
 		return "?";
+	}
+
+	/**
+	 * @return true if a roleplay command of ours was sent a moment ago, and this
+	 *         message is therefore likely to be the server answering it
+	 */
+	static boolean answeringRoleplayCommand() {
+		return System.currentTimeMillis() - lastRoleplayAt < 3000L;
 	}
 
 	/** @return true when events are wanted at all. */

@@ -70,6 +70,8 @@ public class FallbackConfigScreen extends Screen {
 		list.addWidget(percentSlider("far_opacity", config.farOpacity, 10, 100, v -> config.farOpacity = v));
 		list.addWidget(percentSlider("whisper_opacity", config.whisperOpacity, 10, 100, v -> config.whisperOpacity = v));
 		list.addWidget(toggle("chat_strip_prefix", () -> config.chatStripPrefix, v -> config.chatStripPrefix = v));
+		list.addWidget(toggle("hide_command_results", () -> config.hideCommandResults,
+				v -> config.hideCommandResults = v));
 
 		list.addHeader(category("speech"));
 		list.addWidget(toggle("speech_enabled", () -> config.speechEnabled, v -> config.speechEnabled = v));

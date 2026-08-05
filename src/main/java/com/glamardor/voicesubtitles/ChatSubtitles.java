@@ -40,6 +40,14 @@ public final class ChatSubtitles {
 	 */
 	private static final char[] NAME_SEPARATORS = {':', '»', '›', '—', '>', ']', '|'};
 
+	/**
+	 * How far into the line the author's name may sit and still count as a prefix.
+	 *
+	 * <p>Room for the rank or channel a server puts in front of it, and no more:
+	 * a name found halfway through a sentence is being talked about, not talking.
+	 */
+	private static final int NAME_AT_FRONT = 12;
+
 	private static final int MAX_LENGTH = 300;
 
 	private ChatSubtitles() {
@@ -69,7 +77,13 @@ public final class ChatSubtitles {
 			return;
 		}
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (!cfg.showSelf && client.player != null && speaker.equals(client.player.getUuid())) {
+		boolean self = client.player != null && speaker.equals(client.player.getUuid());
+		if (!cfg.showSelf && self) {
+			return;
+		}
+		// A dice roll answering our own /try is not speech, and reading it back
+		// as a caption helps nobody: it is already in the chat and in the log.
+		if (self && cfg.hideCommandResults && LogEvents.answeringRoleplayCommand()) {
 			return;
 		}
 
@@ -117,6 +131,20 @@ public final class ChatSubtitles {
 						return rest;
 					}
 				}
+			}
+		}
+
+		// No separator at all, which is how dice rolls and action results come
+		// out: "[4] Name 1... [Fail]". If the name is right at the front, cutting
+		// after it is still the right thing, since the caption prints it anyway.
+		for (String name : namesOf(speaker)) {
+			int at = text.indexOf(name);
+			if (at < 0 || at > NAME_AT_FRONT || name.isBlank()) {
+				continue;
+			}
+			String rest = text.substring(at + name.length()).trim();
+			if (!rest.isEmpty()) {
+				return rest;
 			}
 		}
 
