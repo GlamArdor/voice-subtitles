@@ -17,7 +17,7 @@ import java.lang.reflect.Method;
  * strongly to somebody who reads the conversation instead of hearing it.
  *
  * <p>So while cinema mode is hiding the interface, the feed is drawn here, and
- * lifted clear of the bottom bar the way that mod lifts the chat.
+ * sat on top of the bottom bar rather than left where the hotbar used to be.
  *
  * <p>Reached by reflection and only when the mod is actually installed: this is
  * a courtesy between two mods, not a dependency, and Voice Subtitles must build

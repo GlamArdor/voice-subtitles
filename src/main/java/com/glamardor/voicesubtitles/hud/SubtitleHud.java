@@ -50,6 +50,16 @@ public final class SubtitleHud {
 	/** How much of the screen the feed is pushed up when the chat is open. */
 	private static final int CHAT_OFFSET = 14;
 
+	/**
+	 * The gap left under the feed in cinema mode.
+	 *
+	 * <p>The ordinary offset is there to clear the hotbar, and cinema mode has no
+	 * hotbar to clear, so keeping it would leave the captions floating in the
+	 * middle of the picture. This is the small breathing space above the matte
+	 * instead. A player who set an even smaller offset keeps theirs.
+	 */
+	private static final int CINEMA_BOTTOM_OFFSET = 8;
+
 	private SubtitleHud() {
 	}
 
@@ -75,16 +85,20 @@ public final class SubtitleHud {
 			render(context, tickCounter);
 			return;
 		}
-		// Lifted clear of the bottom matte, the way that mod lifts the chat, so
-		// the captions never sit half inside the black.
+		// Sat just on top of the bottom matte: lifted clear of the black, and
+		// without the hotbar allowance that has nothing to clear in cinema mode.
 		int lift = CinemaCompat.barHeight(context);
 		context.getMatrices().pushMatrix();
 		context.getMatrices().translate(0F, -lift);
-		render(context, tickCounter);
+		render(context, tickCounter, Math.min(VoiceSubtitlesConfig.get().bottomOffset, CINEMA_BOTTOM_OFFSET));
 		context.getMatrices().popMatrix();
 	}
 
 	public static void render(DrawContext context, RenderTickCounter tickCounter) {
+		render(context, tickCounter, VoiceSubtitlesConfig.get().bottomOffset);
+	}
+
+	private static void render(DrawContext context, RenderTickCounter tickCounter, int bottomOffset) {
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
 		if (!cfg.enabled) {
 			return;
@@ -106,7 +120,7 @@ public final class SubtitleHud {
 		// need to say it before the first caption fails to appear, not after.
 		int loadingHeight = ProgressOverlay.render(context, textRenderer,
 				context.getScaledWindowWidth() / 2,
-				context.getScaledWindowHeight() - cfg.bottomOffset);
+				context.getScaledWindowHeight() - bottomOffset);
 
 		if (lines.isEmpty()) {
 			return;
@@ -151,7 +165,7 @@ public final class SubtitleHud {
 			captions = captions.subList(captions.size() - cfg.maxLines, captions.size());
 		}
 
-		int bottom = screenHeight - cfg.bottomOffset - Math.round(loadingHeight / scale);
+		int bottom = screenHeight - bottomOffset - Math.round(loadingHeight / scale);
 		if (client.currentScreen instanceof ChatScreen) {
 			bottom -= CHAT_OFFSET;
 		}
