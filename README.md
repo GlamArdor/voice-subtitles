@@ -12,6 +12,9 @@ Everything runs on your own machine. Nothing is recorded, nothing is uploaded, a
 
 - **Caption feed** in the spirit of Minecraft: Story Mode – the speaker's head, their name, and their speech, stacked above the hotbar and fading out when the conversation moves on.
 - **Roleplay names.** The name comes from the player list, so a character you know shows up as their character name and one you have not met shows up exactly as the server calls them.
+
+  ![Names as the server writes them](docs/screenshots/names-in-a-village.png)
+
 - **Per-speaker colours,** derived from each player's UUID, so the same person is the same colour for everybody running the mod. Can be set to plain white, or assigned by hand.
 - **Above the speaker's head** as an alternative to the feed, drawn independently of name tags so it works on servers that hide them.
 
@@ -19,6 +22,9 @@ Everything runs on your own machine. Nothing is recorded, nothing is uploaded, a
 
 - **Distance is visible, not filtered.** Everything the client can hear gets a caption; the further away and the quieter the voice, the fainter its text. Whispers are fainter still. Nothing is ever hidden for being far away.
 - **Where the voice came from,** optionally: a small arrow in front of each line points at the speaker – up for ahead, down for behind you. Off by default.
+
+  ![Two people talking at once, each with an arrow](docs/screenshots/feed-two.png)
+
 - **Text chat too, if you want it** – voice only by default, or voice and chat together, or either one written to the log and drawn nowhere.
 
 ## The conversation log
