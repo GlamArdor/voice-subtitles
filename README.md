@@ -61,11 +61,11 @@ English:
 | id | size | kind | notes |
 |---|---|---|---|
 | `en-fast` | 103 MB | whole utterance | **the default.** NVIDIA Parakeet, punctuation and capitals included, trained on the way people talk rather than on read-aloud books |
-| `en-multi` | 465 MB | whole utterance | Parakeet 0.6B: more accurate again, and in fact **25 European languages**, Russian and Ukrainian among them |
+| `en-heavy` | 465 MB | whole utterance | Parakeet 0.6B: more accurate again, and in fact **25 European languages**, Russian and Ukrainian among them |
 | `en` | 40 MB | streaming | Vosk, the original small model |
 | `en-large` | 1.8 GB | streaming | Vosk at its best |
 
-Other languages, all Vosk: `uk`, `de`, `fr`, `es`, `pl`, `it`, `ja`. For most of them `en-multi` is worth trying instead, since it covers them too.
+Other languages, all Vosk: `uk`, `de`, `fr`, `es`, `pl`, `it`, `ja`. For most of them `en-heavy` is worth trying instead, since it covers them too.
 
 ### How accurate, honestly
 
