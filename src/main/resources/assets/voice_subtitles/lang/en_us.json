@@ -210,6 +210,9 @@
 	"voice_subtitles.event.leave.server": "Left the server: %s",
 	"voice_subtitles.event.join.world": "Opened the world: %s",
 	"voice_subtitles.event.leave.world": "Left the world: %s",
-	"voice_subtitles.preview.text": "This is what a caption looks like: the words appear as the speech is recognised, and then the line fades away.",
-	"commands.voice_subtitles.help.preview": "/vsub preview [seconds] – show a sample caption"
+	"commands.voice_subtitles.help.preview": "/vsub preview [seconds] – show a sample caption",
+	"voice_subtitles.preview.text.1": "This is what a caption looks like: the words appear as the speech is recognised, then the line fades away.",
+	"voice_subtitles.preview.text.2": "Ask for another while this one is still up and you will see both halves of the motion at once.",
+	"voice_subtitles.preview.text.3": "Wrapping width, text size and the darkness of the plate are set in the same place as everything else.",
+	"voice_subtitles.preview.text.4": "A long enough line stays up longer than a short one, so there is time to read it to the end."
 }
