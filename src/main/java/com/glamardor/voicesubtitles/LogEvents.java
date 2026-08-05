@@ -38,9 +38,7 @@ public final class LogEvents {
 	 * quietly kept those would be a worse thing to have than not having a log,
 	 * and no amount of sealing the file would make it acceptable.
 	 */
-	private static final Set<String> SECRET = Set.of(
-			"login", "l", "log", "register", "reg", "auth", "password", "passwd", "pass",
-			"changepassword", "changepass", "cp", "unregister", "2fa", "code", "token");
+	private static final Set<String> SECRET = Set.of("login", "reg", "register");
 
 	/** When a roleplay command was last sent, so its answer can be told apart. */
 	private static volatile long lastRoleplayAt;

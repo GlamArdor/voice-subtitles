@@ -444,18 +444,27 @@ public class SubtitleLogScreen extends Screen {
 		 */
 		@Override
 		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			// The bar is claimed before anything else is asked. Handing the press
+			// to the widget first meant it answered "mine" and then moved
+			// nothing, and our own handling never got its turn.
+			if (button == 0 && isMouseOver(mouseX, mouseY) && mouseX >= getScrollbarX()) {
+				draggingBar = true;
+				scrollTo(mouseY);
+				return true;
+			}
 			if (super.mouseClicked(mouseX, mouseY, button)) {
 				return true;
 			}
-			if (button != 0 || !isMouseOver(mouseX, mouseY)) {
-				return false;
-			}
-			// Grabbing the bar and grabbing the text are both dragging, just of
-			// different things: one jumps to where the pointer is, the other
-			// follows it. Handled here because the list itself never gets asked
-			// otherwise - rows of plain text accept no clicks to drag from.
-			draggingBar = mouseX >= getScrollbarX();
-			return true;
+			// Grabbing the text is dragging too, just of the other thing. Taken
+			// here because the list is never asked otherwise: rows of plain text
+			// accept no clicks for a drag to start from.
+			return button == 0 && isMouseOver(mouseX, mouseY);
+		}
+
+		/** Puts the view where the pointer is, proportionally. */
+		private void scrollTo(double mouseY) {
+			double fraction = (mouseY - getY()) / (double) Math.max(getHeight(), 1);
+			setScrollY(Math.max(0D, Math.min(1D, fraction)) * getMaxScrollY());
 		}
 
 		@Override
@@ -470,19 +479,18 @@ public class SubtitleLogScreen extends Screen {
 		 */
 		@Override
 		public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+			// Ours first, for the same reason as above.
+			if (button == 0 && draggingBar) {
+				scrollTo(mouseY);
+				return true;
+			}
 			if (super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
 				return true;
 			}
 			if (button != 0) {
 				return false;
 			}
-			if (draggingBar) {
-				// The bar goes where the pointer is, proportionally.
-				double fraction = (mouseY - getY()) / (double) Math.max(getHeight(), 1);
-				setScrollY(Math.max(0D, Math.min(1D, fraction)) * getMaxScrollY());
-			} else {
-				setScrollY(getScrollY() - deltaY);
-			}
+			setScrollY(getScrollY() - deltaY);
 			return true;
 		}
 
