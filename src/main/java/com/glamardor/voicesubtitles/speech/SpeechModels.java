@@ -93,7 +93,7 @@ public final class SpeechModels {
 		// Sold as English and in fact good for twenty-five European languages,
 		// Russian among them: worth knowing before anybody downloads two models
 		// to cover a server that speaks both.
-		offline("en-giga", "English + 24 more (Parakeet 0.6B)", "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8", 465);
+		offline("en-multi", "English + 24 more (Parakeet 0.6B)", "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8", 465);
 	}
 
 	private SpeechModels() {
