@@ -369,6 +369,8 @@ public class SubtitleLogScreen extends Screen {
 	private static class LogList extends ElementListWidget<LogList.Row> {
 
 		private final int rowWidth;
+		/** True while the little bar on the right is being dragged. */
+		private boolean draggingBar;
 
 		LogList(MinecraftClient client, int width, int height, int y) {
 			super(client, width, height, y, ROW_HEIGHT);
@@ -445,7 +447,21 @@ public class SubtitleLogScreen extends Screen {
 			if (super.mouseClicked(mouseX, mouseY, button)) {
 				return true;
 			}
-			return button == 0 && isMouseOver(mouseX, mouseY);
+			if (button != 0 || !isMouseOver(mouseX, mouseY)) {
+				return false;
+			}
+			// Grabbing the bar and grabbing the text are both dragging, just of
+			// different things: one jumps to where the pointer is, the other
+			// follows it. Handled here because the list itself never gets asked
+			// otherwise - rows of plain text accept no clicks to drag from.
+			draggingBar = mouseX >= getScrollbarX();
+			return true;
+		}
+
+		@Override
+		public boolean mouseReleased(double mouseX, double mouseY, int button) {
+			draggingBar = false;
+			return super.mouseReleased(mouseX, mouseY, button);
 		}
 
 		/**
@@ -457,11 +473,17 @@ public class SubtitleLogScreen extends Screen {
 			if (super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
 				return true;
 			}
-			if (button == 0) {
-				setScrollY(getScrollY() - deltaY);
-				return true;
+			if (button != 0) {
+				return false;
 			}
-			return false;
+			if (draggingBar) {
+				// The bar goes where the pointer is, proportionally.
+				double fraction = (mouseY - getY()) / (double) Math.max(getHeight(), 1);
+				setScrollY(Math.max(0D, Math.min(1D, fraction)) * getMaxScrollY());
+			} else {
+				setScrollY(getScrollY() - deltaY);
+			}
+			return true;
 		}
 
 		void scrollToBottom() {

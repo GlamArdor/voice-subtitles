@@ -28,8 +28,19 @@ public final class LogEvents {
 	/** Two deaths cannot happen this close together, so the second one is an echo. */
 	private static final long DEATH_ECHO_MS = 3000L;
 
-	/** Roleplay commands worth keeping: an action is as much a line as a spoken one. */
+	/** Roleplay commands, whose answer is a dice roll rather than something said. */
 	private static final Set<String> ROLEPLAY = Set.of("me", "try", "do", "todo", "ame", "ado");
+
+	/**
+	 * Commands never written down, whatever else is.
+	 *
+	 * <p>Login and registration carry a password in plain sight. A log that
+	 * quietly kept those would be a worse thing to have than not having a log,
+	 * and no amount of sealing the file would make it acceptable.
+	 */
+	private static final Set<String> SECRET = Set.of(
+			"login", "l", "log", "register", "reg", "auth", "password", "passwd", "pass",
+			"changepassword", "changepass", "cp", "unregister", "2fa", "code", "token");
 
 	/** When a roleplay command was last sent, so its answer can be told apart. */
 	private static volatile long lastRoleplayAt;
