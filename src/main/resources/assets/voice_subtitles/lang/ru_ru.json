@@ -209,5 +209,7 @@
 	"voice_subtitles.event.join.server": "Зашёл на сервер: %s",
 	"voice_subtitles.event.leave.server": "Вышел с сервера: %s",
 	"voice_subtitles.event.join.world": "Зашёл в мир: %s",
-	"voice_subtitles.event.leave.world": "Вышел из мира: %s"
+	"voice_subtitles.event.leave.world": "Вышел из мира: %s",
+	"voice_subtitles.preview.text": "Так выглядит реплика в субтитрах: слова появляются по мере распознавания речи, а затем строка плавно гаснет.",
+	"commands.voice_subtitles.help.preview": "/vsub preview [секунды] – показать пример реплики"
 }

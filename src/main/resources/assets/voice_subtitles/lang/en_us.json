@@ -209,5 +209,7 @@
 	"voice_subtitles.event.join.server": "Joined the server: %s",
 	"voice_subtitles.event.leave.server": "Left the server: %s",
 	"voice_subtitles.event.join.world": "Opened the world: %s",
-	"voice_subtitles.event.leave.world": "Left the world: %s"
+	"voice_subtitles.event.leave.world": "Left the world: %s",
+	"voice_subtitles.preview.text": "This is what a caption looks like: the words appear as the speech is recognised, and then the line fades away.",
+	"commands.voice_subtitles.help.preview": "/vsub preview [seconds] – show a sample caption"
 }

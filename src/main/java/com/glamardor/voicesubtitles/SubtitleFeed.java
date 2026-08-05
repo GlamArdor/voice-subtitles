@@ -213,6 +213,13 @@ public final class SubtitleFeed {
 		}
 	}
 
+	/** Keeps an open line from timing out, for a caption with no audio behind it. */
+	public static void keepAlive(Line line) {
+		if (line != null && line.open()) {
+			line.lastAudioAt = System.currentTimeMillis();
+		}
+	}
+
 	/** Ends this line, whatever it holds. */
 	public static void close(Line line) {
 		if (line != null && line.open()) {

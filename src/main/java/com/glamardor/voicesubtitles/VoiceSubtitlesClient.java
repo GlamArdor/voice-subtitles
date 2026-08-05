@@ -97,6 +97,7 @@ public class VoiceSubtitlesClient implements ClientModInitializer {
 		DistanceFade.tick();
 		LivePreview.tick(client);
 		Keybinds.tick(client);
+		SubtitlePreview.tick(client);
 		if (client.world != null && client.world.getTime() % 100L == 0L) {
 			SpeakerTracker.prune();
 		}

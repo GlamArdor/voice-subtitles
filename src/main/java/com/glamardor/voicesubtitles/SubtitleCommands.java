@@ -2,6 +2,7 @@ package com.glamardor.voicesubtitles;
 
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import com.glamardor.voicesubtitles.gui.SubtitleLogScreen;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
@@ -64,6 +65,10 @@ public final class SubtitleCommands {
 						.then(ModelCommands.build())
 						.then(ClientCommandManager.literal("log")
 								.executes(ctx -> openLog()))
+						.then(ClientCommandManager.literal("preview")
+								.executes(ctx -> preview(6))
+								.then(ClientCommandManager.argument("seconds", IntegerArgumentType.integer(1, 60))
+										.executes(ctx -> preview(IntegerArgumentType.getInteger(ctx, "seconds")))))
 						.then(ClientCommandManager.literal("color")
 								.then(ClientCommandManager.argument("player", StringArgumentType.word())
 										.suggests(PLAYER_SUGGESTIONS)
@@ -76,9 +81,16 @@ public final class SubtitleCommands {
 	}
 
 	private static int help(FabricClientCommandSource source) {
+		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.preview").formatted(Formatting.GRAY));
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.color").formatted(Formatting.GRAY));
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.model").formatted(Formatting.GRAY));
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.log").formatted(Formatting.GRAY));
+		return 1;
+	}
+
+	/** Puts a sample caption on screen, so the look of them can be adjusted. */
+	private static int preview(int seconds) {
+		SubtitlePreview.start(seconds);
 		return 1;
 	}
 
