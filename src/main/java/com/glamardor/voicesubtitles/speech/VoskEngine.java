@@ -34,6 +34,9 @@ final class VoskEngine implements SpeechEngine {
 
 	/** Reads the model into memory. Slow for the large models; call off the render thread. */
 	static VoskEngine load(SpeechModels.Entry entry) throws java.io.IOException {
+		if (!VoskNatives.load()) {
+			throw new IllegalStateException("Vosk native library unavailable: " + VoskNatives.failure());
+		}
 		LibVosk.setLogLevel(LogLevel.WARNINGS);
 		Model model = new Model(SpeechModels.pathOf(entry).toString());
 		return new VoskEngine(entry.id(), model);

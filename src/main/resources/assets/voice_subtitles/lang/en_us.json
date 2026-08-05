@@ -146,7 +146,7 @@
 	"toast.voice_subtitles.model.ready.detail": "Recognition ready: %s",
 	"toast.voice_subtitles.model.failed": "Voice Subtitles: model download failed",
 	"toast.voice_subtitles.native.downloading": "Voice Subtitles",
-	"toast.voice_subtitles.native.size": "Downloading the sherpa-onnx recognition library: %s, %s MB",
+	"toast.voice_subtitles.native.size": "Downloading the %s recognition engine: %s MB",
 	"toast.voice_subtitles.native.ready": "Voice Subtitles",
 	"toast.voice_subtitles.native.ready.detail": "sherpa-onnx library installed",
 	"toast.voice_subtitles.native.failed": "Voice Subtitles: could not download the sherpa-onnx library",

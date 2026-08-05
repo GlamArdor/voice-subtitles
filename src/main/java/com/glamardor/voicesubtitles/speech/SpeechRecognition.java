@@ -123,9 +123,10 @@ public final class SpeechRecognition {
 			}
 			return;
 		}
-		// A sherpa model is useless without the library that runs it, and that is
-		// a separate download; ask for it before claiming to be loading.
-		if (entry.engine().isSherpa() && !nativesReady(cfg)) {
+		// A model is useless without the library that runs it, and that is a
+		// separate download for either engine; ask for it before claiming to be
+		// loading anything.
+		if (!nativesReady(entry, cfg)) {
 			return;
 		}
 
@@ -162,7 +163,10 @@ public final class SpeechRecognition {
 	 * @return true when recognition can go ahead; otherwise the state has been
 	 *         set to explain why and a download may have been started
 	 */
-	private static boolean nativesReady(VoiceSubtitlesConfig cfg) {
+	private static boolean nativesReady(SpeechModels.Entry entry, VoiceSubtitlesConfig cfg) {
+		if (entry.engine() == SpeechModels.Engine.VOSK) {
+			return voskReady(cfg);
+		}
 		SherpaNatives.Build build = SherpaNatives.buildForThisMachine();
 		if (build == null) {
 			state = State.FAILED;
@@ -179,6 +183,28 @@ public final class SpeechRecognition {
 		if (!SherpaNatives.load()) {
 			state = State.FAILED;
 			failure = SherpaNatives.failure();
+			return false;
+		}
+		return true;
+	}
+
+	/** The same for Vosk, whose library is a download of its own. */
+	private static boolean voskReady(VoiceSubtitlesConfig cfg) {
+		if (!VoskNatives.isSupported()) {
+			state = State.FAILED;
+			failure = "Vosk has no build for this platform; pick a sherpa-onnx model instead";
+			return false;
+		}
+		if (!VoskNatives.isInstalled()) {
+			state = State.NO_MODEL;
+			if (cfg.autoDownloadModel) {
+				ModelDownload.startVoskNativesOnce(SpeechRecognition::init);
+			}
+			return false;
+		}
+		if (!VoskNatives.load()) {
+			state = State.FAILED;
+			failure = VoskNatives.failure();
 			return false;
 		}
 		return true;

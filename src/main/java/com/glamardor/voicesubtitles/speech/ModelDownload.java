@@ -78,7 +78,7 @@ public final class ModelDownload {
 		}
 
 		toast(Text.translatable("toast.voice_subtitles.native.downloading"),
-				Text.translatable("toast.voice_subtitles.native.size", build.platform(), build.megabytes()));
+				Text.translatable("toast.voice_subtitles.native.size", "sherpa-onnx (" + build.platform() + ")", build.megabytes()));
 		VoiceSubtitles.LOGGER.info("Downloading the sherpa-onnx native library for {} ({} MB)",
 				build.platform(), build.megabytes());
 
@@ -98,6 +98,37 @@ public final class ModelDownload {
 				RUNNING.set(false);
 			}
 		}, "voice-subtitles-native-download");
+		thread.setDaemon(true);
+		thread.start();
+		return true;
+	}
+
+	/** Fetches the Vosk native library, once. */
+	public static boolean startVoskNativesOnce(Runnable onFinished) {
+		if (!RUNNING.compareAndSet(false, true)) {
+			return false;
+		}
+
+		toast(Text.translatable("toast.voice_subtitles.native.downloading"),
+				Text.translatable("toast.voice_subtitles.native.size", "Vosk", VoskNatives.MEGABYTES));
+		VoiceSubtitles.LOGGER.info("Downloading the Vosk native library ({} MB)", VoskNatives.MEGABYTES);
+
+		Thread thread = new Thread(() -> {
+			try {
+				DownloadState.begin(Text.translatable("voice_subtitles.download.native"));
+				VoskNatives.download(DownloadState::update);
+				toast(Text.translatable("toast.voice_subtitles.native.ready"),
+						Text.translatable("toast.voice_subtitles.native.ready.detail"));
+				MinecraftClient.getInstance().execute(onFinished);
+			} catch (Exception e) {
+				VoiceSubtitles.LOGGER.error("Could not download the Vosk native library", e);
+				toast(Text.translatable("toast.voice_subtitles.native.failed"),
+						Text.literal(String.valueOf(e.getMessage())).formatted(Formatting.RED));
+			} finally {
+				DownloadState.end();
+				RUNNING.set(false);
+			}
+		}, "voice-subtitles-vosk-download");
 		thread.setDaemon(true);
 		thread.start();
 		return true;

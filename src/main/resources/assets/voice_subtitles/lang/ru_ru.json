@@ -146,7 +146,7 @@
 	"toast.voice_subtitles.model.ready.detail": "Распознавание готово: %s",
 	"toast.voice_subtitles.model.failed": "Voice Subtitles: не удалось скачать модель",
 	"toast.voice_subtitles.native.downloading": "Voice Subtitles",
-	"toast.voice_subtitles.native.size": "Скачиваю библиотеку распознавания sherpa-onnx: %s, %s МБ",
+	"toast.voice_subtitles.native.size": "Скачиваю движок распознавания %s: %s МБ",
 	"toast.voice_subtitles.native.ready": "Voice Subtitles",
 	"toast.voice_subtitles.native.ready.detail": "Библиотека sherpa-onnx установлена",
 	"toast.voice_subtitles.native.failed": "Voice Subtitles: не удалось скачать библиотеку sherpa-onnx",

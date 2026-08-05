@@ -33,11 +33,9 @@ dependencies {
 	// addon to do anything; that is declared as a dependency in fabric.mod.json.
 	modCompileOnly "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}"
 
-	// Offline speech recognition. Bundled inside our jar (jar-in-jar) together
-	// with JNA, which it binds its native library through; the native libraries
-	// for Windows, Linux and macOS all ship inside the Vosk artifact itself.
-	implementation "com.alphacephei:vosk:${project.vosk_version}"
-	include "com.alphacephei:vosk:${project.vosk_version}"
+	// Vosk's five Java classes are vendored in src/main/java/org/vosk and its
+	// native library is downloaded on demand, because the published jar carries
+	// the same library built for three platforms and weighs 25 MB for it.
 	implementation "net.java.dev.jna:jna:${project.jna_version}"
 	include "net.java.dev.jna:jna:${project.jna_version}"
 
