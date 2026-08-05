@@ -53,6 +53,37 @@ public final class SubtitleHud {
 	private SubtitleHud() {
 	}
 
+	/**
+	 * Draws the feed when the interface around it is not being drawn.
+	 *
+	 * <p>Called before anything else has a chance to skip or cancel the HUD:
+	 * vanilla skips its layers when the player hides the interface, and Absolute
+	 * Cinema Camera cancels the lot for its film mode. Either way the feed is the
+	 * one thing that should stay, since somebody reading the conversation rather
+	 * than hearing it loses the conversation with it.
+	 */
+	public static void renderWhileHidden(DrawContext context, RenderTickCounter tickCounter) {
+		MinecraftClient client = MinecraftClient.getInstance();
+		boolean cinema = CinemaCompat.hidingHud();
+		if (!client.options.hudHidden && !cinema) {
+			return; // the ordinary HUD layer is drawing it
+		}
+		if (client.options.hudHidden && VoiceSubtitlesConfig.get().hideWithHud && !cinema) {
+			return; // asked to go with the rest of the interface
+		}
+		if (!cinema) {
+			render(context, tickCounter);
+			return;
+		}
+		// Lifted clear of the bottom matte, the way that mod lifts the chat, so
+		// the captions never sit half inside the black.
+		int lift = CinemaCompat.barHeight(context);
+		context.getMatrices().pushMatrix();
+		context.getMatrices().translate(0F, -lift);
+		render(context, tickCounter);
+		context.getMatrices().popMatrix();
+	}
+
 	public static void render(DrawContext context, RenderTickCounter tickCounter) {
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
 		if (!cfg.enabled) {
@@ -60,7 +91,10 @@ public final class SubtitleHud {
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (client.player == null || (client.options.hudHidden && cfg.hideWithHud)) {
+		if (client.player == null) {
+			return;
+		}
+		if (client.options.hudHidden && cfg.hideWithHud && !CinemaCompat.hidingHud()) {
 			return;
 		}
 

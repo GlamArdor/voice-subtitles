@@ -95,7 +95,7 @@ Three keys are available under **Voice Subtitles** in the game's controls – tu
 
 ## Thanks
 
-Thanks to **Contik** for testing.
+Thanks to **Contik** and **Gizmons_** for testing.
 
 ## Third-party components
 

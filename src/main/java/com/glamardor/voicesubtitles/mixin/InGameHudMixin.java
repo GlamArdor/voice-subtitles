@@ -1,8 +1,6 @@
 package com.glamardor.voicesubtitles.mixin;
 
-import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import com.glamardor.voicesubtitles.hud.SubtitleHud;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.client.render.RenderTickCounter;
@@ -12,26 +10,26 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Keeps the subtitle feed on screen while the interface is hidden.
+ * Keeps the subtitle feed on screen when the rest of the interface is not.
  *
- * <p>With the HUD hidden, vanilla skips its HUD layers wholesale – and the feed,
- * being one of them, goes with it. That is wrong for this mod: someone who reads
- * the conversation rather than hearing it would lose it the moment they press
- * F1. So when the HUD is hidden the feed is drawn from here instead, unless the
- * player asked for it to hide along with everything else.
+ * <p>Two ways that happens. Vanilla skips every HUD layer when the player hides
+ * the interface, and the feed is one of them: someone who reads the conversation
+ * rather than hearing it would lose it the moment they press F1. And Absolute
+ * Cinema Camera cancels the HUD outright for its film mode, which takes the feed
+ * with it for the same reason.
+ *
+ * <p>Both are answered here, by drawing the feed before either can happen.
+ *
+ * <p>The priority is deliberate. Absolute Cinema's own hook sits at this very
+ * point and cancels the method, and once a callback cancels, the ones after it
+ * are never called. A lower number is applied first, which puts this one in
+ * front of it.
  */
-@Mixin(InGameHud.class)
+@Mixin(value = InGameHud.class, priority = 500)
 public abstract class InGameHudMixin {
 
 	@Inject(method = "render", at = @At("HEAD"))
 	private void voiceSubtitles$renderWhileHudHidden(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-		MinecraftClient client = MinecraftClient.getInstance();
-		if (!client.options.hudHidden) {
-			return; // the normal HUD layer is drawing it
-		}
-		if (VoiceSubtitlesConfig.get().hideWithHud) {
-			return;
-		}
-		SubtitleHud.render(context, tickCounter);
+		SubtitleHud.renderWhileHidden(context, tickCounter);
 	}
 }
