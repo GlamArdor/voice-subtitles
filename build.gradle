@@ -22,6 +22,14 @@ repositories {
 	maven { url = 'https://maven.terraformersmc.com/releases/' }
 }
 
+configurations {
+	// The ONNX Runtime jar, in a configuration of its own so the build can reach
+	// inside it. See the two tasks at the bottom of this file: the Java API is
+	// copied into the mod, the native runtime for five platforms is left behind,
+	// and the small JNI shims are lifted out as resources.
+	onnxruntime
+}
+
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
@@ -43,6 +51,12 @@ dependencies {
 	// Java reads neither format on its own.
 	implementation "org.apache.commons:commons-compress:${project.commons_compress_version}"
 	include "org.apache.commons:commons-compress:${project.commons_compress_version}"
+
+	// ONNX Runtime runs the translation models. Deliberately not include()d: that
+	// would carry 41 MB of native runtime for five platforms into the mod, and
+	// sherpa-onnx has already put the one that matters on disk.
+	implementation "com.microsoft.onnxruntime:onnxruntime:${project.onnxruntime_version}"
+	onnxruntime "com.microsoft.onnxruntime:onnxruntime:${project.onnxruntime_version}"
 
 	// In-game settings screen. Compile-time only: the mod ships its own screen and
 	// only reaches for Cloth when Cloth is actually installed.
@@ -76,4 +90,85 @@ java {
 	withSourcesJar()
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
+}
+
+// ── ONNX Runtime, taken apart ────────────────────────────────────────────────
+//
+// The published jar is 41 MB, almost all of it the native runtime built for five
+// platforms. The mod needs neither: sherpa-onnx already downloads that runtime
+// and puts it on disk, so the only piece missing is the small JNI shim that
+// binds it to Java. All four of those together are under half a megabyte, which
+// is little enough to ride along inside the mod rather than become one more
+// thing to download and one more thing to fail.
+
+tasks.register('onnxRuntimeShims', Copy) {
+	description = 'Lifts the ONNX Runtime JNI shims out of its jar, one per platform'
+	from { zipTree(configurations.onnxruntime.singleFile) }
+	include 'ai/onnxruntime/native/*/*onnxruntime4j_jni.*'
+	exclude '**/*.dSYM/**'
+	includeEmptyDirs = false
+	// ai/onnxruntime/native/win-x64/onnxruntime4j_jni.dll
+	//   → assets/voice_subtitles/onnxruntime/win-x64/onnxruntime4j_jni.dll
+	// Under our own namespace on purpose: left where they were, ONNX Runtime's
+	// own loader would find them on the classpath and unpack them itself.
+	eachFile { file ->
+		file.path = 'assets/voice_subtitles/onnxruntime/' +
+				file.sourcePath.split('/')[3] + '/' + file.name
+	}
+	into layout.buildDirectory.dir('generated/onnxruntime')
+}
+
+sourceSets.main.resources.srcDir tasks.named('onnxRuntimeShims')
+
+jar {
+	// The Java API travels with the mod; the native runtime inside that jar does
+	// not, and neither do the shims, which the task above has already placed.
+	from(provider { zipTree(configurations.onnxruntime.singleFile) }) {
+		include 'ai/onnxruntime/**'
+		exclude 'ai/onnxruntime/native/**'
+	}
+}
+
+// ── The full build ───────────────────────────────────────────────────────────
+//
+// The same mod with the recognition engine and the Russian model packed inside
+// it, for people who cannot reach GitHub and Hugging Face at any useful speed.
+// Nothing is compiled differently: the ordinary jar with a `bundled/` folder
+// added, which BundledAssets copies onto disk on the first run.
+//
+// What goes in comes from a directory beside the project, laid out exactly as it
+// will sit in `config/voice_subtitles`:
+//
+//   bundle/native/sherpa-onnx-<version>-<platform>-jni/lib/…
+//   bundle/models/<the folder the model unpacks into>/…
+//   bundle/translate/<direction>/…            (optional)
+//
+// Not in version control – a git repository is no place for a quarter of a
+// gigabyte of model weights – so this task quietly does nothing when the
+// directory is not there, and `gradlew build` still works for everybody else.
+// Point it somewhere else with -Pbundle_dir=…
+
+def bundleDir = file(project.findProperty('bundle_dir') ?: 'bundle')
+
+tasks.register('fullJar', Zip) {
+	group = 'build'
+	description = 'The mod with the recognition engine and the model packed inside it'
+	onlyIf {
+		if (!bundleDir.isDirectory()) {
+			logger.lifecycle("No bundle at ${bundleDir}, so there is no full jar to build")
+			return false
+		}
+		return true
+	}
+
+	dependsOn tasks.named('remapJar')
+	from { zipTree(tasks.named('remapJar').get().archiveFile) }
+	from(bundleDir) { into 'bundled' }
+
+	archiveBaseName = project.archives_base_name
+	archiveVersion = project.version
+	archiveClassifier = 'full'
+	archiveExtension = 'jar'
+	destinationDirectory = layout.buildDirectory.dir('libs')
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }

@@ -5,8 +5,11 @@ import com.glamardor.voicesubtitles.gui.LivePreview;
 import com.glamardor.voicesubtitles.hud.OverHeadSubtitles;
 import com.glamardor.voicesubtitles.hud.ProgressOverlay;
 import com.glamardor.voicesubtitles.hud.SubtitleHud;
+import com.glamardor.voicesubtitles.speech.BundledAssets;
+import com.glamardor.voicesubtitles.speech.CrashGuard;
 import com.glamardor.voicesubtitles.speech.DownloadState;
 import com.glamardor.voicesubtitles.speech.SpeechRecognition;
+import com.glamardor.voicesubtitles.translate.Translation;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -24,6 +27,9 @@ public class VoiceSubtitlesClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		VoiceSubtitlesConfig.get(); // load (and write defaults on first run)
+		// Before anything is opened: reads what the last run was in the middle of
+		// when it died, if it died.
+		CrashGuard.init();
 
 		HudElementRegistry.addLast(VoiceSubtitles.id("subtitle_feed"), SubtitleHud::render);
 		OverHeadSubtitles.init();
@@ -90,7 +96,10 @@ public class VoiceSubtitlesClient implements ClientModInitializer {
 	private void tick(MinecraftClient client) {
 		if (!speechStarted && client.options != null) {
 			speechStarted = true;
-			SpeechRecognition.init();
+			// The full build carries its engine and its model inside the jar;
+			// they are put on disk before anything goes looking for them. The
+			// ordinary build finds nothing there and starts straight away.
+			BundledAssets.installThen(SpeechRecognition::init);
 		}
 
 		SubtitleFeed.tick();
@@ -98,8 +107,11 @@ public class VoiceSubtitlesClient implements ClientModInitializer {
 		LivePreview.tick(client);
 		Keybinds.tick(client);
 		SubtitlePreview.tick(client);
+		Translation.tick(client);
 		if (client.world != null && client.world.getTime() % 100L == 0L) {
 			SpeakerTracker.prune();
+			// Models for languages nobody has spoken lately can go back to disk.
+			SpeechRecognition.tick();
 		}
 	}
 }

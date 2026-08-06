@@ -18,3 +18,11 @@ remappedSrc/
 
 # Raw screenshots straight out of the game; the resized ones live in docs/
 gallery/
+
+# What the full build packs into its jar: a quarter of a gigabyte of model
+# weights and a native library, both fetched from their own projects rather than
+# kept here. See the fullJar task in build.gradle.
+bundle/
+
+# Log files copied in from players to be read
+logs/
