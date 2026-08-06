@@ -26,6 +26,34 @@ Everything runs on your own machine. Nothing is recorded, nothing is uploaded, a
   ![Two people talking at once, each with an arrow](docs/screenshots/feed-two.png)
 
 - **Text chat too, if you want it** – voice only by default, or voice and chat together, or either one written to the log and drawn nowhere.
+- **Translation,** for a server where not everybody speaks the same language. Russian and English, both ways, on your own machine. See below.
+
+## Translation
+
+A roleplay server is a story told out loud, and somebody who does not speak the language it is told in is standing outside it. This turns what they hear and what they read into their own language, and it does that without sending a word of it anywhere.
+
+Mark whoever speaks something else and the mod does the rest:
+
+```
+/vsub lang Gizmons_ en
+```
+
+From then on that player's voice goes into an English model rather than a Russian one, and what it produces is translated under the original. Everybody else carries on through the model they always did. Text chat, `/me`, `/do`, `/try` and the rest are translated too, in place, under the line they belong to.
+
+![A caption with its translation underneath](docs/screenshots/translation.png)
+
+Four settings, and the difference between them is how much is loaded and when:
+
+| | |
+|---|---|
+| **Off** | nothing. Everybody's voice goes into your own model, which is what a Russian model does to English speech: writes it out in Cyrillic, phonetically, and it reads as nonsense |
+| **Recognise only** | a second recognition model for the people you marked, so at least their words come out in their own alphabet. Nothing is translated and no translation model is downloaded |
+| **Automatic** | recognise and translate, loading both the moment one of those people is heard and letting go of them once they have been quiet for five minutes. For a server where they are the exception |
+| **Always** | the same, loaded from the moment you join. For somebody who is the exception themselves and hears another language all evening |
+
+The original is kept under the translation, so a name a translator mangled can still be read as it was said. Names in brackets and words the server put in brackets are held back from the translator entirely and put back afterwards, because a translated character name is a different character.
+
+The translation runs through [OPUS-MT](https://github.com/Helsinki-NLP/Opus-MT) by the University of Helsinki, quantised to eight bits and run by ONNX Runtime: a hundred and thirteen megabytes per direction, a few hundred milliseconds per sentence, and no network at any point. Russian and English only for now, both ways.
 
 ## The conversation log
 
@@ -42,7 +70,7 @@ Spoken lines come from the recogniser, so treat them as a reminder of the conver
 
 Recognition runs entirely on your machine, through [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) or [Vosk](https://alphacephei.com/vosk/), whichever the chosen model needs.
 
-**This mod downloads what it needs after installation.** A recognition engine and a language model are both far too large to ship inside a 3 MB mod, so the first time one is needed the mod fetches it: the engine from the project's own GitHub releases, the model from there or from `alphacephei.com`. Both land in `config/voice_subtitles`. Those are the only network requests the mod ever makes. Nothing is uploaded, nothing is reported, and no audio ever leaves your machine.
+**This mod downloads what it needs after installation.** A recognition engine and a language model are both far too large to ship inside a 3 MB mod, so the first time one is needed the mod fetches it: the engine from the project's own GitHub releases, the model from there or from `alphacephei.com`, a translation model from Hugging Face. All of it lands in `config/voice_subtitles`. Those are the only network requests the mod ever makes. Nothing is uploaded, nothing is reported, and no audio ever leaves your machine.
 
 The engine is executable code rather than data, so its archive is checked against a SHA-256 hash built into the mod before anything is unpacked or loaded, and refused if it does not match.
 
@@ -53,6 +81,16 @@ If you would rather it did not download anything: turn off **Download the model 
 /vsub model download ru-giga-rnnt
 /vsub model use ru-giga-rnnt
 ```
+
+### Two downloads of this mod
+
+**`voice-subtitles-x.y.z.jar`** is the ordinary one: 3 MB, and it fetches the engine and the model the first time it needs them. Take this one.
+
+**`voice-subtitles-x.y.z-full.jar`** is 177 MB and is the same mod with the recognition engine and the Russian GigaAM model already inside it. On the first run it copies them onto disk in about a second and never asks the network for anything.
+
+It exists because for some people the download is the problem rather than the size. GitHub and Hugging Face are reached slowly from some places and not at all from others, and an evening spent watching a progress bar crawl is an evening not spent playing. If that is not you, the ordinary jar is smaller, covers every platform, and lets you pick a different model.
+
+The full jar carries the engine built for **Windows x64** only, since six platform builds would be most of its weight. On anything else it still saves you the model and fetches the engine, which is 7 to 30 MB. Translation models are not in it either; they are a separate download in both jars.
 
 ### The models
 
@@ -93,8 +131,11 @@ The whole-utterance models are markedly better and cost a second of delay. That 
 
 | Command | What it does |
 |---|---|
+| `/vsub lang <player> <ru\|en\|reset>` | Marks somebody as speaking another language, by UUID rather than by name: on a roleplay server a name is a costume and the person underneath goes on speaking the same language |
+| `/vsub lang` | Everybody who has been marked, and what everyone else is taken to speak |
 | `/vsub color <player> <#RRGGBB\|reset>` | Assigns a colour by hand |
 | `/vsub model list\|download <id>\|use <id>\|status` | Manages recognition models |
+| `/vsub model repair` | Throws away whatever took the game down last time and fetches it again |
 | `/vsub log` | Opens the conversation log |
 | `/vsub preview` | Puts a sample caption on screen, so their look can be set without waiting for somebody to talk |
 
@@ -120,12 +161,13 @@ Thanks to **Contik** and **Gizmons_** for testing.
 
 ## Third-party components
 
-The mod itself is about 3 MB. Everything heavy is fetched when it is first needed.
+The mod itself is about 3 MB. Everything heavy is fetched when it is first needed, or already sitting in the full jar.
 
 Bundled inside the mod jar:
 
 - [JNA](https://github.com/java-native-access/jna) – Apache License 2.0 / LGPL 2.1+
 - [Apache Commons Compress](https://commons.apache.org/proper/commons-compress/) – Apache License 2.0
+- The Java API of [ONNX Runtime](https://github.com/microsoft/onnxruntime) by Microsoft – MIT, without its native runtime: the copy sherpa-onnx puts on disk is the same library, so there is no sense carrying a second one
 - The Java API of [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) by Xiaomi Corporation – Apache License 2.0, copied from tag v1.13.4
 - The Java API of [Vosk](https://github.com/alphacep/vosk-api) by Alpha Cephei Inc – Apache License 2.0, copied from tag v0.3.45
 
@@ -137,6 +179,9 @@ Downloaded on demand, and only what you use:
   - [Parakeet](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3) by NVIDIA – CC BY 4.0
   - [T-one](https://github.com/voicekit-team/T-one) by T-Bank – Apache License 2.0
   - [Vosk models](https://alphacephei.com/vosk/models) – Apache License 2.0
+- The **translation model** for the direction you need: [OPUS-MT](https://github.com/Helsinki-NLP/Opus-MT) by the University of Helsinki, quantised to eight bits by [Xenova](https://huggingface.co/Xenova) – Apache License 2.0, 113 MB per direction
+
+The full jar carries two of those already unpacked: the sherpa-onnx engine for Windows x64 and the GigaAM Russian model. Nothing about them is different, and it is the same code either way.
 
 ## Where things are kept
 
@@ -145,6 +190,7 @@ Everything lives under `config/voice_subtitles`:
 | | |
 |---|---|
 | `models/` | the language models you downloaded |
+| `translate/` | the translation models, one folder per direction |
 | `native/` | the recognition engines |
 | `history/` | the conversation log, one file per day |
 | `logs/` | anything you saved from the log screen by hand |
