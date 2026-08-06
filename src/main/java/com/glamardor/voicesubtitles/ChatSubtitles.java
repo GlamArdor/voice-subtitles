@@ -1,12 +1,14 @@
 package com.glamardor.voicesubtitles;
 
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
+import com.glamardor.voicesubtitles.translate.Translation;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +60,7 @@ public final class ChatSubtitles {
 			if (sender != null) {
 				push(sender.getId(), message.getString());
 			}
+			echoTranslation(message, sender == null ? null : sender.getId());
 		});
 
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
@@ -68,7 +71,71 @@ public final class ChatSubtitles {
 			if (author != null) {
 				push(author, message.getString());
 			}
+			echoTranslation(message, author);
 		});
+	}
+
+	/**
+	 * Writes the translation of a chat line into the chat, under the line it
+	 * translates.
+	 *
+	 * <p>Because the feed cannot be relied on to show it. A caption is only made
+	 * for a message that can be pinned to a player, and the roleplay commands –
+	 * /me, /do, /try – come through as system messages that many servers send
+	 * without any marker saying who wrote them. Their translation had nowhere to
+	 * go. In the chat it always has somewhere to go, and it sits where anybody
+	 * would look for it: on the next line.
+	 */
+	private static void echoTranslation(Text message, UUID author) {
+		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
+		if (!cfg.enabled || !cfg.translateChat || !cfg.translationMode.translates()) {
+			return;
+		}
+		String body = bodyOf(message, author);
+		if (body.isBlank()) {
+			return;
+		}
+		Translation.ofText(body, translation -> {
+			if (translation.isBlank()) {
+				return;
+			}
+			MinecraftClient client = MinecraftClient.getInstance();
+			client.execute(() -> client.inGameHud.getChatHud().addMessage(
+					Text.literal("↳ ").formatted(Formatting.DARK_GRAY)
+							.append(Text.literal(translation).formatted(Formatting.GRAY))));
+		});
+	}
+
+	/**
+	 * The part of a chat line worth translating: the words, not the furniture.
+	 *
+	 * <p>A server prints a channel, a rank and a name in front of what somebody
+	 * said, and on a Russian server all of that is Russian. Handing the whole
+	 * line to a translator that decides what language it is in by counting
+	 * letters means an English sentence with a Russian preamble counts as
+	 * Russian and is left alone – which is exactly why the log had no English
+	 * translations in it while the captions, which see the words on their own,
+	 * had them all along.
+	 */
+	public static String bodyOf(Text message, UUID author) {
+		String raw = message.getString().trim();
+		if (raw.isEmpty()) {
+			return "";
+		}
+		if (author != null) {
+			return VoiceSubtitlesConfig.get().chatStripPrefix ? stripPrefix(raw, author).trim() : raw;
+		}
+		// Nobody to match a name against, so cut at the first separator instead.
+		int limit = Math.min(raw.length(), PREFIX_SEARCH_LIMIT);
+		for (int i = 0; i < limit; i++) {
+			if (contains(SEPARATORS, raw.charAt(i))) {
+				String rest = raw.substring(i + 1).trim();
+				if (!rest.isEmpty()) {
+					return rest;
+				}
+			}
+		}
+		return raw;
 	}
 
 	private static void push(UUID speaker, String text) {

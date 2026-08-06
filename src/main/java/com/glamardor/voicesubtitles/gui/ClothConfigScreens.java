@@ -3,6 +3,7 @@ package com.glamardor.voicesubtitles.gui;
 import com.glamardor.voicesubtitles.config.ConfigScreenMarker;
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import com.glamardor.voicesubtitles.speech.SpeechRecognition;
+import com.glamardor.voicesubtitles.translate.Languages;
 import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
@@ -92,9 +93,39 @@ final class ClothConfigScreens {
 				v -> config.autoDownloadModel = v));
 		speech.addEntry(toggle(entries, "show_partial", config.showPartial, defaults.showPartial,
 				v -> config.showPartial = v));
-		speech.addEntry(slider(entries, "max_recognizers", config.maxRecognizers, defaults.maxRecognizers, 1, 8,
+		speech.addEntry(slider(entries, "max_recognizers", config.maxRecognizers, defaults.maxRecognizers, 1, 32,
 				v -> config.maxRecognizers = v, v -> Text.literal(String.valueOf(v))));
 		speech.addEntry(entries.startTextDescription(Text.translatable("voice_subtitles.option.model.hint")).build());
+
+		// ── Translation ─────────────────────────────────────────────────────
+		ConfigCategory translation = category(builder, "translation");
+		translation.addEntry(enumSelector(entries, "translation_mode", VoiceSubtitlesConfig.TranslationMode.class,
+				config.translationMode, defaults.translationMode, v -> config.translationMode = v, "translation_mode"));
+		var myLanguage = entries.startSelector(option("my_language"), Languages.choices(), config.myLanguage)
+				.setDefaultValue(defaults.myLanguage)
+				.setNameProvider(Languages::nameOf)
+				.setTooltip(tooltip("my_language"))
+				.setSaveConsumer(v -> config.myLanguage = v)
+				.build();
+		translation.addEntry(myLanguage);
+		LIVE.add(() -> config.myLanguage = myLanguage.getValue());
+		var defaultSpoken = entries.startSelector(option("default_spoken"), Languages.choices(),
+						config.defaultSpokenLanguage)
+				.setDefaultValue(defaults.defaultSpokenLanguage)
+				.setNameProvider(Languages::nameOf)
+				.setTooltip(tooltip("default_spoken"))
+				.setSaveConsumer(v -> config.defaultSpokenLanguage = v)
+				.build();
+		translation.addEntry(defaultSpoken);
+		LIVE.add(() -> config.defaultSpokenLanguage = defaultSpoken.getValue());
+		translation.addEntry(toggle(entries, "translate_chat", config.translateChat, defaults.translateChat,
+				v -> config.translateChat = v));
+		translation.addEntry(toggle(entries, "show_original", config.showOriginal, defaults.showOriginal,
+				v -> config.showOriginal = v));
+		translation.addEntry(toggle(entries, "auto_download_translation", config.autoDownloadTranslation,
+				defaults.autoDownloadTranslation, v -> config.autoDownloadTranslation = v));
+		translation.addEntry(entries.startTextDescription(
+				Text.translatable("voice_subtitles.option.translation.hint")).build());
 
 		// ── Names ───────────────────────────────────────────────────────────
 		ConfigCategory names = category(builder, "names");
@@ -116,12 +147,13 @@ final class ClothConfigScreens {
 
 		// ── Layout ──────────────────────────────────────────────────────────
 		ConfigCategory layout = category(builder, "layout");
-		layout.addEntry(toggle(entries, "centered", config.centered, defaults.centered, v -> config.centered = v));
+		layout.addEntry(enumSelector(entries, "feed_alignment", VoiceSubtitlesConfig.Alignment.class,
+				config.feedAlignment, defaults.feedAlignment, v -> config.feedAlignment = v, "alignment"));
 		layout.addEntry(slider(entries, "bottom_offset", config.bottomOffset, defaults.bottomOffset, 0, 200,
 				v -> config.bottomOffset = v, ClothConfigScreens::pixels));
 		layout.addEntry(percent(entries, "max_width", config.maxWidthPercent, defaults.maxWidthPercent, 20, 100,
 				v -> config.maxWidthPercent = v));
-		layout.addEntry(slider(entries, "max_lines", config.maxLines, defaults.maxLines, 1, 10,
+		layout.addEntry(slider(entries, "max_lines", config.maxLines, defaults.maxLines, 1, 32,
 				v -> config.maxLines = v, v -> Text.literal(String.valueOf(v))));
 		layout.addEntry(slider(entries, "lifetime", config.lineLifetimeMs, defaults.lineLifetimeMs, 500, 15000,
 				v -> config.lineLifetimeMs = v, ClothConfigScreens::seconds));

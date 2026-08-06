@@ -2,6 +2,9 @@ package com.glamardor.voicesubtitles;
 
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import com.glamardor.voicesubtitles.gui.SubtitleLogScreen;
+import com.glamardor.voicesubtitles.speech.SpeechModels;
+import com.glamardor.voicesubtitles.speech.SpeechRecognition;
+import com.glamardor.voicesubtitles.translate.Languages;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -14,6 +17,8 @@ import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -56,6 +61,26 @@ public final class SubtitleCommands {
 		return builder.buildFuture();
 	};
 
+	/**
+	 * The languages the mod can actually recognise, plus "reset".
+	 *
+	 * <p>Everything in the model catalogue, since marking somebody as speaking a
+	 * language there is no model for would be marking them as unintelligible.
+	 */
+	private static final SuggestionProvider<FabricClientCommandSource> LANGUAGE_SUGGESTIONS = (ctx, builder) -> {
+		String remaining = builder.getRemainingLowerCase();
+		if ("reset".startsWith(remaining)) {
+			builder.suggest("reset", Text.translatable("commands.voice_subtitles.lang.reset"));
+		}
+		for (SpeechModels.Entry entry : SpeechModels.catalogue().values()) {
+			String code = entry.id().split("-")[0];
+			if (code.startsWith(remaining)) {
+				builder.suggest(code, Text.literal(entry.language()));
+			}
+		}
+		return builder.buildFuture();
+	};
+
 	private SubtitleCommands() {
 	}
 
@@ -69,6 +94,15 @@ public final class SubtitleCommands {
 								.executes(ctx -> preview(6))
 								.then(ClientCommandManager.argument("seconds", IntegerArgumentType.integer(1, 60))
 										.executes(ctx -> preview(IntegerArgumentType.getInteger(ctx, "seconds")))))
+						.then(ClientCommandManager.literal("lang")
+								.executes(ctx -> listLanguages(ctx.getSource()))
+								.then(ClientCommandManager.argument("player", StringArgumentType.word())
+										.suggests(PLAYER_SUGGESTIONS)
+										.then(ClientCommandManager.argument("language", StringArgumentType.word())
+												.suggests(LANGUAGE_SUGGESTIONS)
+												.executes(ctx -> setLanguage(ctx.getSource(),
+														StringArgumentType.getString(ctx, "player"),
+														StringArgumentType.getString(ctx, "language"))))))
 						.then(ClientCommandManager.literal("color")
 								.then(ClientCommandManager.argument("player", StringArgumentType.word())
 										.suggests(PLAYER_SUGGESTIONS)
@@ -82,8 +116,10 @@ public final class SubtitleCommands {
 
 	private static int help(FabricClientCommandSource source) {
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.preview").formatted(Formatting.GRAY));
+		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.lang").formatted(Formatting.GRAY));
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.color").formatted(Formatting.GRAY));
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.model").formatted(Formatting.GRAY));
+		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.repair").formatted(Formatting.GRAY));
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.help.log").formatted(Formatting.GRAY));
 		return 1;
 	}
@@ -102,6 +138,71 @@ public final class SubtitleCommands {
 	private static int openLog() {
 		MinecraftClient client = MinecraftClient.getInstance();
 		client.send(() -> client.setScreen(new SubtitleLogScreen(null)));
+		return 1;
+	}
+
+	/**
+	 * Marks a player as speaking a particular language.
+	 *
+	 * <p>Remembered by UUID rather than by name: on a roleplay server a name is a
+	 * costume, and the person underneath goes on speaking the same language.
+	 */
+	private static int setLanguage(FabricClientCommandSource source, String playerName, String language) {
+		ClientPlayNetworkHandler handler = MinecraftClient.getInstance().getNetworkHandler();
+		PlayerListEntry entry = handler == null ? null : handler.getPlayerListEntry(playerName);
+		if (entry == null) {
+			source.sendFeedback(Text.translatable("commands.voice_subtitles.color.no_player", playerName)
+					.formatted(Formatting.RED));
+			return 0;
+		}
+		UUID id = entry.getProfile().getId();
+
+		if ("reset".equalsIgnoreCase(language)) {
+			Languages.set(id, null);
+			SpeechRecognition.reload();
+			source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.cleared", playerName)
+					.formatted(Formatting.GRAY));
+			return 1;
+		}
+		String code = language.toLowerCase(Locale.ROOT).split("[-_]")[0];
+		if (SpeechModels.byId(SpeechModels.defaultFor(code)) == null) {
+			source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.unknown", code)
+					.formatted(Formatting.RED));
+			return 0;
+		}
+		Languages.set(id, code);
+		SpeechRecognition.reload();
+
+		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
+		source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.set", playerName, code));
+		if (!cfg.translationMode.routes()) {
+			// Marking somebody without turning routing on does nothing at all,
+			// and saying so beats leaving them to wonder why.
+			source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.mode_off")
+					.formatted(Formatting.YELLOW));
+		}
+		return 1;
+	}
+
+	/** Everybody who has been marked, and what the rest are taken to speak. */
+	private static int listLanguages(FabricClientCommandSource source) {
+		source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.default",
+				Languages.defaultSpoken(), Languages.mine()).formatted(Formatting.GRAY));
+
+		Map<String, String> named = Languages.named();
+		if (named.isEmpty()) {
+			source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.none").formatted(Formatting.GRAY));
+			return 1;
+		}
+		for (Map.Entry<String, String> marked : named.entrySet()) {
+			try {
+				UUID id = UUID.fromString(marked.getKey());
+				source.sendFeedback(Text.literal("  ")
+						.append(NameResolver.nameOf(id))
+						.append(Text.literal(" – " + marked.getValue()).formatted(Formatting.GRAY)));
+			} catch (IllegalArgumentException ignored) {
+			}
+		}
 		return 1;
 	}
 

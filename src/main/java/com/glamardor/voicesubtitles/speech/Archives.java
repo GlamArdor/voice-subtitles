@@ -26,13 +26,13 @@ import java.util.zip.ZipInputStream;
  * anything is written. An archive can name a path like {@code ../../mods/evil.jar},
  * and an unpacker that resolves it blindly will happily write there.
  */
-final class Archives {
+public final class Archives {
 
 	private Archives() {
 	}
 
 	/** Told how many bytes have arrived out of how many are expected. */
-	interface Progress {
+	public interface Progress {
 		/** @param total the size from the server, or -1 when it did not say */
 		void update(long read, long total);
 	}
@@ -44,7 +44,7 @@ final class Archives {
 	 * ten times a second: a bar that only moves every five percent looks stuck
 	 * on a slow connection, which is exactly the impression to avoid.
 	 */
-	static void download(String url, Path target, Progress progress) throws IOException {
+	public static void download(String url, Path target, Progress progress) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
 		connection.setConnectTimeout(15_000);
 		connection.setReadTimeout(30_000);

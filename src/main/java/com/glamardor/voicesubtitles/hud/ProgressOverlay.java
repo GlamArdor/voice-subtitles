@@ -55,6 +55,12 @@ public final class ProgressOverlay {
 	 */
 	private static Text describe(DownloadState.Snapshot download) {
 		String done = megabytes(download.read());
+		if (download.unpacking()) {
+			// Nothing is being fetched: this is the full build putting what it
+			// carries on disk, and it is over in seconds rather than minutes.
+			return Text.translatable("voice_subtitles.bundle.progress",
+					done, megabytes(download.total()), download.percent());
+		}
 		if (download.installing()) {
 			// The bytes are in; what is left is checking and unpacking them, and
 			// for a large model that is a wait of its own.

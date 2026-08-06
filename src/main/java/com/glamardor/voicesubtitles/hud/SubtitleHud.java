@@ -50,6 +50,9 @@ public final class SubtitleHud {
 	/** How much of the screen the feed is pushed up when the chat is open. */
 	private static final int CHAT_OFFSET = 14;
 
+	/** How solid a translation is next to the words it translates. */
+	private static final float TRANSLATION_ALPHA = 0.72F;
+
 	/**
 	 * The gap left under the feed in cinema mode.
 	 *
@@ -177,11 +180,15 @@ public final class SubtitleHud {
 		int y = bottom;
 		for (int i = captions.size() - 1; i >= 0; i--) {
 			Caption caption = captions.get(i);
-			int blockHeight = caption.rows.size() * TEXT_HEIGHT;
+			int blockHeight = (caption.rows.size() + caption.translation.size()) * TEXT_HEIGHT;
 			int blockWidth = arrowOffset + headOffset + caption.width;
 			int top = y - blockHeight;
 
-			int x = cfg.centered ? (screenWidth - blockWidth) / 2 : 8 + PADDING;
+			int x = switch (cfg.feedAlignment) {
+				case LEFT -> 8 + PADDING;
+				case CENTER -> (screenWidth - blockWidth) / 2;
+				case RIGHT -> screenWidth - blockWidth - 8 - PADDING;
+			};
 
 			drawCaption(context, textRenderer, caption, x, top, blockWidth, blockHeight,
 					arrowOffset, headOffset, cfg);
@@ -225,6 +232,13 @@ public final class SubtitleHud {
 			context.drawTextWithShadow(textRenderer, row, textX, rowY, ColorHelper.withAlpha(alpha, 0xFFFFFF));
 			rowY += TEXT_HEIGHT;
 		}
+		// The translation under what was said, dimmer, so which is which is
+		// obvious without reading either.
+		int quieter = Math.round(alpha * TRANSLATION_ALPHA);
+		for (OrderedText row : caption.translation) {
+			context.drawTextWithShadow(textRenderer, row, textX, rowY, ColorHelper.withAlpha(quieter, 0xFFFFFF));
+			rowY += TEXT_HEIGHT;
+		}
 	}
 
 	/** Turns one feed line into laid-out rows, or {@code null} if it should not be shown. */
@@ -246,20 +260,41 @@ public final class SubtitleHud {
 				: NameResolver.nameOf(line.speaker).copy();
 
 		int bodyColor = cfg.colorSpeech ? color : SpeakerColors.WHITE;
+		// With the original turned off, the translation takes its place entirely:
+		// somebody who cannot read the language has no use for a line of it.
+		boolean replace = line.translated() && !cfg.showOriginal;
+		String spoken = replace ? line.translation() : Captions.bodyOf(line, now);
+
 		MutableText full = Text.empty()
 				.append(name)
 				.append(Text.literal(": ").styled(style -> style.withColor(bodyColor)))
-				.append(Text.literal(Captions.bodyOf(line, now)).styled(style -> style.withColor(bodyColor)));
+				.append(Text.literal(spoken).styled(style -> style.withColor(bodyColor)));
 
+		// Sized to what is on screen, not to what is coming. Sizing it to the
+		// whole sentence was an attempt to hold the plate still while the text
+		// typed itself into it, and it made things worse: every phrase the
+		// recogniser handed over widened the plate in one step, and a centred
+		// feed jumps sideways when its plate widens. Grown a character at a time
+		// with the text, it does not jump at all.
 		List<OrderedText> rows = textRenderer.wrapLines(full, maxTextWidth);
 		int width = 0;
 		for (OrderedText row : rows) {
 			width = Math.max(width, textRenderer.getWidth(row));
 		}
 
+		List<OrderedText> translation = List.of();
+		if (line.translated() && !replace) {
+			translation = textRenderer.wrapLines(
+					Text.literal(line.translation()).styled(style -> style.withColor(SpeakerColors.WHITE)),
+					maxTextWidth);
+			for (OrderedText row : translation) {
+				width = Math.max(width, textRenderer.getWidth(row));
+			}
+		}
+
 		String arrow = cfg.showDirection ? SpeakerDirection.arrowFor(line.speaker) : null;
 
-		return new Caption(rows, width, alpha, skinOf(line, cfg), arrow, color);
+		return new Caption(rows, translation, width, alpha, skinOf(line, cfg), arrow, color);
 	}
 
 	private static SkinTextures skinOf(SubtitleFeed.Line line, VoiceSubtitlesConfig cfg) {
@@ -274,7 +309,7 @@ public final class SubtitleHud {
 	}
 
 	/** One caption, ready to draw. */
-	private record Caption(List<OrderedText> rows, int width, int alpha, SkinTextures skin,
-	                       String arrow, int color) {
+	private record Caption(List<OrderedText> rows, List<OrderedText> translation, int width, int alpha,
+	                       SkinTextures skin, String arrow, int color) {
 	}
 }

@@ -278,6 +278,7 @@ public class SubtitleLogScreen extends Screen {
 			}
 			if (!needle.isEmpty()
 					&& !entry.text().toLowerCase(Locale.ROOT).contains(needle)
+					&& !entry.translation().toLowerCase(Locale.ROOT).contains(needle)
 					&& !entry.name().toLowerCase(Locale.ROOT).contains(needle)) {
 				continue;
 			}
@@ -389,7 +390,7 @@ public class SubtitleLogScreen extends Screen {
 				MutableText full;
 				if (entry.isEvent()) {
 					full = Text.literal(SubtitleLog.timeOf(entry) + "  ").formatted(Formatting.DARK_GRAY)
-							.append(Text.literal("— ").formatted(Formatting.DARK_GRAY))
+							.append(Text.literal("– ").formatted(Formatting.DARK_GRAY))
 							.append(body(entry.text(), highlight).formatted(Formatting.GRAY, Formatting.ITALIC));
 					for (OrderedText row : client.textRenderer.wrapLines(full, rowWidth)) {
 						rows.add(new Row(row));
@@ -405,6 +406,7 @@ public class SubtitleLogScreen extends Screen {
 					for (OrderedText row : client.textRenderer.wrapLines(full, rowWidth)) {
 						rows.add(new Row(row));
 					}
+					addTranslation(rows, entry, highlight, client);
 					continue;
 				}
 				int color = SpeakerColors.colorOf(entry.speaker());
@@ -416,8 +418,27 @@ public class SubtitleLogScreen extends Screen {
 				for (OrderedText row : client.textRenderer.wrapLines(full, rowWidth)) {
 					rows.add(new Row(row));
 				}
+				addTranslation(rows, entry, highlight, client);
 			}
 			replaceEntries(rows);
+		}
+
+		/**
+		 * The translation under the line it belongs to, indented and dimmed.
+		 *
+		 * <p>Under rather than instead: what was said is the record, and what it
+		 * means is a reading of it.
+		 */
+		private void addTranslation(List<Row> rows, SubtitleLog.Entry entry, String highlight,
+		                            MinecraftClient client) {
+			if (!entry.translated()) {
+				return;
+			}
+			MutableText line = Text.literal("        ↳ ").formatted(Formatting.DARK_GRAY)
+					.append(body(entry.translation(), highlight).formatted(Formatting.GRAY));
+			for (OrderedText row : client.textRenderer.wrapLines(line, rowWidth)) {
+				rows.add(new Row(row));
+			}
 		}
 
 		/** The text, with what was searched for picked out of it. */

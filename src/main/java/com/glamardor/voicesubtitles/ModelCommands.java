@@ -1,6 +1,7 @@
 package com.glamardor.voicesubtitles;
 
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
+import com.glamardor.voicesubtitles.speech.CrashGuard;
 import com.glamardor.voicesubtitles.speech.ModelDownload;
 import com.glamardor.voicesubtitles.speech.SpeechRecognition;
 import com.glamardor.voicesubtitles.speech.SpeechModels;
@@ -47,7 +48,41 @@ public final class ModelCommands {
 				.then(ClientCommandManager.literal("use")
 						.then(ClientCommandManager.argument("id", StringArgumentType.word())
 								.suggests(MODEL_SUGGESTIONS)
-								.executes(ctx -> use(ctx.getSource(), StringArgumentType.getString(ctx, "id")))));
+								.executes(ctx -> use(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
+				.then(ClientCommandManager.literal("repair")
+						.executes(ctx -> repair(ctx.getSource())));
+	}
+
+	/**
+	 * Throws away whatever took the game down and fetches it again.
+	 *
+	 * <p>A model that kills the game on opening is not opened again by itself,
+	 * because opening it is what killed the game. This is the way back: the files
+	 * go, the suspicion goes with them, and the download starts over.
+	 */
+	private static int repair(FabricClientCommandSource source) {
+		String suspect = CrashGuard.suspect();
+		if (suspect == null || suspect.isEmpty()) {
+			source.sendFeedback(Text.translatable("commands.voice_subtitles.model.repair.nothing")
+					.formatted(Formatting.GRAY));
+			return 1;
+		}
+		CrashGuard.forgive();
+
+		String id = suspect.substring(suspect.indexOf(':') + 1);
+		SpeechModels.Entry entry = SpeechModels.byId(id);
+		if (entry == null) {
+			// A translation rather than a speech model: the files are elsewhere,
+			// and clearing the suspicion is enough to have it fetched again.
+			source.sendFeedback(Text.translatable("commands.voice_subtitles.model.repair.cleared", suspect));
+			SpeechRecognition.reload();
+			return 1;
+		}
+		SpeechModels.discard(entry);
+		source.sendFeedback(Text.translatable("commands.voice_subtitles.model.repair.done", id)
+				.formatted(Formatting.GREEN));
+		SpeechRecognition.reload();
+		return 1;
 	}
 
 	private static int list(FabricClientCommandSource source) {

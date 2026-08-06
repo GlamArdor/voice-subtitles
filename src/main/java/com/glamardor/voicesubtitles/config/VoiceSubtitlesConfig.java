@@ -63,6 +63,56 @@ public class VoiceSubtitlesConfig {
 		USERNAME
 	}
 
+	/**
+	 * How much the mod does about people speaking a language you do not read.
+	 *
+	 * <p>The order is deliberate: each state does everything the one before it
+	 * does, and one thing more.
+	 */
+	public enum TranslationMode {
+		/**
+		 * Nothing. Everybody goes through your own model, which is what a Russian
+		 * model does to English speech: writes it out in Cyrillic, phonetically,
+		 * and it reads as nonsense.
+		 */
+		OFF,
+		/**
+		 * A second recognition model for the people marked as speaking something
+		 * else, so at least their words come out in their own alphabet. No
+		 * translation, and no translation model to download.
+		 */
+		RECOGNIZE_ONLY,
+		/**
+		 * Recognise and translate, loading both the moment one of those people is
+		 * heard and letting them go again once they have been quiet for a while.
+		 * For a server where they are the exception.
+		 */
+		AUTO,
+		/**
+		 * The same, kept loaded from the moment you join. For somebody who is the
+		 * exception themselves and hears another language all evening.
+		 */
+		ALWAYS;
+
+		/** @return true when speech in another language gets its own model */
+		public boolean routes() {
+			return this != OFF;
+		}
+
+		/** @return true when what that model produces is then translated */
+		public boolean translates() {
+			return this == AUTO || this == ALWAYS;
+		}
+	}
+
+	/** Which side of the screen the feed sits on. */
+	public enum Alignment {
+		LEFT,
+		/** Centred, Story-Mode style. */
+		CENTER,
+		RIGHT
+	}
+
 	/** How a speaker's text is coloured. */
 	public enum ColorMode {
 		/** Everybody white (default). */
@@ -113,8 +163,21 @@ public class VoiceSubtitlesConfig {
 	public Map<String, String> manualColors = new LinkedHashMap<>();
 
 	// ── Feed layout ──────────────────────────────────────────────────────────
-	/** Centre the feed horizontally, Story-Mode style. Off = left aligned. */
+	/**
+	 * Kept only to carry old settings across: it said centred or left, and there
+	 * are three sides now. Read once, into {@link #feedAlignment}.
+	 */
 	public boolean centered = true;
+	/**
+	 * Which side of the screen the feed sits on.
+	 *
+	 * <p>Given a value here rather than left to be filled in later, because the
+	 * settings screen builds its widgets from a fresh instance of this class to
+	 * know what the defaults are, and that instance never goes through
+	 * {@link #sanitize()}. Left null, it took the Cloth Config screen down with
+	 * it every time it was opened.
+	 */
+	public Alignment feedAlignment = Alignment.CENTER;
 	/** Distance from the bottom of the screen, in GUI pixels. */
 	public int bottomOffset = 58;
 	/** Maximum feed width, as a percentage of the screen width. */
@@ -215,8 +278,12 @@ public class VoiceSubtitlesConfig {
 	 *
 	 * <p>Captions used to appear and vanish between one frame and the next, which
 	 * reads as a flicker at the edge of vision rather than as something arriving.
+	 *
+	 * <p>Fading out takes two and a half times as long again, so this is a full
+	 * second of leaving. Two hundred milliseconds was the first guess and it read
+	 * as a snap rather than a fade; at four hundred a caption is seen to arrive.
 	 */
-	public int fadeMillis = 220;
+	public int fadeMillis = 400;
 	/**
 	 * Let recognised text appear a few characters at a time rather than in whole
 	 * jumps, so a caption grows the way speech does.
@@ -225,11 +292,11 @@ public class VoiceSubtitlesConfig {
 	/**
 	 * How fast those characters appear, per second.
 	 *
-	 * <p>Fast enough that it never delays the words: it catches up to whatever
-	 * the recogniser has said within a fraction of a second, and if it ever falls
-	 * behind, the text is shown in full rather than kept waiting.
+	 * <p>Fast enough that it never delays the words: an ordinary sentence is
+	 * whole in about a second, well inside the several seconds it then stays on
+	 * screen. Ninety was too quick to see, which rather defeated the point.
 	 */
-	public int typewriterSpeed = 90;
+	public int typewriterSpeed = 55;
 
 	// ── Speech recognition ───────────────────────────────────────────────────
 	/** Turn recognised words into captions; off leaves only "who is talking". */
@@ -240,8 +307,16 @@ public class VoiceSubtitlesConfig {
 	public boolean autoDownloadModel = true;
 	/** Show words as they are recognised, before the sentence settles. */
 	public boolean showPartial = true;
-	/** How many people can be recognised at once before the rest get plain captions. */
-	public int maxRecognizers = 3;
+	/**
+	 * How many people can be recognised at once before the rest get plain
+	 * captions.
+	 *
+	 * <p>Each one is a thread and a decoder of its own, so this is the setting
+	 * that decides how much of the machine the mod may take when a whole square
+	 * is talking. Five by default, up to thirty-two for a crowd and a machine
+	 * that can carry it.
+	 */
+	public int maxRecognizers = 5;
 	/**
 	 * How long each model took to load last time, in milliseconds.
 	 *
@@ -250,6 +325,43 @@ public class VoiceSubtitlesConfig {
 	 * same model took on this machine before.
 	 */
 	public Map<String, Integer> modelLoadMillis = new LinkedHashMap<>();
+
+	// ── Translation ──────────────────────────────────────────────────────────
+	/** How much is done about people speaking a language you do not read. */
+	public TranslationMode translationMode = TranslationMode.OFF;
+	/** The language you read. Empty means "the language the game is in". */
+	public String myLanguage = "";
+	/**
+	 * What everybody here is assumed to be speaking. Empty means "the language you
+	 * read", which is right for anybody playing on a server in their own language.
+	 *
+	 * <p>The one setting that makes the exception list work from both sides. On a
+	 * Russian server the Russians leave this alone and mark the one Englishman;
+	 * the Englishman leaves it as Russian and marks nobody, and everything he
+	 * hears is translated for him.
+	 */
+	public String defaultSpokenLanguage = "";
+	/** UUID (string) → language code, for the people who speak something else. */
+	public Map<String, String> speakerLanguages = new LinkedHashMap<>();
+	/**
+	 * Show what was actually said under the translation.
+	 *
+	 * <p>On by default: on a roleplay server it matters that somebody said a thing
+	 * in a particular way, and a translation is a paraphrase of a transcript.
+	 */
+	public boolean showOriginal = true;
+	/** Fetch a translation model by itself the first time one is needed. */
+	public boolean autoDownloadTranslation = true;
+	/**
+	 * Write the translation of a chat line into the chat, under the line itself.
+	 *
+	 * <p>On by default, because the feed cannot be relied on to carry it. A
+	 * caption is only made for a message that can be pinned to a player, and the
+	 * roleplay commands come through as system messages that many servers send
+	 * without saying who wrote them. In the chat the translation always lands
+	 * somewhere, and it lands where anybody would look.
+	 */
+	public boolean translateChat = true;
 
 	// ── Text chat ────────────────────────────────────────────────────────────
 	/**
@@ -310,8 +422,41 @@ public class VoiceSubtitlesConfig {
 		}
 	}
 
+	/** The settings version this build writes; see {@link #migrate()}. */
+	private static final int CURRENT_VERSION = 2;
+
+	/**
+	 * Brings an older settings file up to date.
+	 *
+	 * <p>Only values still sitting on a default that has since changed are
+	 * touched. Somebody who chose a number is left with the number they chose,
+	 * and somebody who never opened the settings gets the timings this version
+	 * thinks are right rather than the ones the first version guessed.
+	 */
+	private void migrate() {
+		if (configVersion >= CURRENT_VERSION) {
+			return;
+		}
+		if (configVersion < 1) {
+			// Both of these read as a snap rather than a fade, which is the whole
+			// thing they were added for.
+			if (fadeMillis == 220) fadeMillis = 400;
+			if (typewriterSpeed == 90) typewriterSpeed = 55;
+		}
+		if (configVersion < 2) {
+			// Three was chosen when a crowded square was a guess rather than a
+			// thing that had happened.
+			if (maxRecognizers == 3) maxRecognizers = 5;
+			// Written before there were three sides to choose from, so it says
+			// what the old two-way switch said.
+			if (!centered) feedAlignment = Alignment.LEFT;
+		}
+		configVersion = CURRENT_VERSION;
+	}
+
 	/** Fills in anything a hand-edited or older config file left null/out of range. */
 	private void sanitize() {
+		migrate();
 		if (mode == null) mode = Mode.VOICE;
 		if (voicePlacement == null) voicePlacement = Placement.FEED;
 		if (chatPlacement == null) chatPlacement = Placement.FEED;
@@ -319,7 +464,12 @@ public class VoiceSubtitlesConfig {
 		if (colorMode == null) colorMode = ColorMode.BY_UUID;
 		if (manualColors == null) manualColors = new LinkedHashMap<>();
 		if (modelLoadMillis == null) modelLoadMillis = new LinkedHashMap<>();
-		maxLines = clamp(maxLines, 1, 10);
+		if (translationMode == null) translationMode = TranslationMode.OFF;
+		if (feedAlignment == null) feedAlignment = Alignment.CENTER;
+		if (speakerLanguages == null) speakerLanguages = new LinkedHashMap<>();
+		if (myLanguage == null) myLanguage = "";
+		if (defaultSpokenLanguage == null) defaultSpokenLanguage = "";
+		maxLines = clamp(maxLines, 1, 32);
 		lineLifetimeMs = clamp(lineLifetimeMs, 500, 30000);
 		lifetimePerCharMs = clamp(lifetimePerCharMs, 0, 300);
 		maxLifetimeMs = clamp(maxLifetimeMs, lineLifetimeMs, 60000);
@@ -331,7 +481,7 @@ public class VoiceSubtitlesConfig {
 		whisperOpacity = clamp(whisperOpacity, 10, 100);
 		overHeadHeight = clamp(overHeadHeight, 0, 200);
 		overHeadWidth = clamp(overHeadWidth, 60, 400);
-		maxRecognizers = clamp(maxRecognizers, 1, 8);
+		maxRecognizers = clamp(maxRecognizers, 1, 32);
 		logCapacity = clamp(logCapacity, 50, 20000);
 		overHeadScalePercent = clamp(overHeadScalePercent, 50, 250);
 		overHeadMaxRows = clamp(overHeadMaxRows, 1, 10);

@@ -103,7 +103,12 @@ public final class OverHeadSubtitles {
 			if (cfg.overHeadShowName) {
 				content.append(NameResolver.nameOf(line.speaker).copy()).append(Text.literal(": "));
 			}
-			content.append(Text.literal(Captions.bodyOf(line, now)));
+			// Above a head there is no room for two versions of the same sentence,
+			// so the translation takes the place of the original rather than
+			// standing under it. What was said is still in the feed and the log.
+			content.append(Text.literal(line.translated()
+					? line.translation()
+					: Captions.bodyOf(line, now)));
 
 			List<OrderedText> rows = textRenderer.wrapLines(content, cfg.overHeadWidth);
 			if (rows.isEmpty()) {

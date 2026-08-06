@@ -35,9 +35,15 @@ public final class Captions {
 	 * <p>Text arrives in jumps, because a recogniser thinks in whole phrases, and
 	 * a caption that grows in jumps reads as flickering. So it is revealed a few
 	 * characters at a time instead, fast enough that it is never what anybody is
-	 * waiting on: the reveal is measured from when the line began and races well
-	 * ahead of the speaking, and the moment it would fall behind, everything
-	 * known is shown at once.
+	 * waiting on: a sentence of sixty characters is whole in under a second.
+	 *
+	 * <p>Measured from when the words appeared rather than from when the line
+	 * did. Those are a second apart – the line opens on the first sound, the
+	 * words arrive once the recogniser has decided what they were – and counting
+	 * from the wrong one meant the whole allowance was spent before there was
+	 * anything to spend it on, so nothing was ever seen to arrive. A later pass
+	 * over the same sentence does not restart it: the clock belongs to the line,
+	 * not to the text.
 	 */
 	public static String bodyOf(SubtitleFeed.Line line, long now) {
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
@@ -47,13 +53,15 @@ public final class Captions {
 		}
 
 		String text = line.text();
-		if (cfg.typewriter && line.open()) {
-			int shown = (int) ((now - line.startedAt()) * Math.max(cfg.typewriterSpeed, 1) / 1000L);
+		if (cfg.typewriter) {
+			// Letter by letter. It used to stop at the last space instead, so
+			// that no half-written word was ever on screen, and the result was
+			// that a caption arrived in four or five jumps – which is the thing
+			// this was added to avoid. A letter every twenty milliseconds reads
+			// as writing; a word every quarter of a second reads as flashing.
+			int shown = line.reveal(now, cfg.typewriterSpeed);
 			if (shown < text.length()) {
-				// Cut on a space where there is one nearby, so a word does not
-				// appear letter by letter like a ransom note.
-				int space = text.lastIndexOf(' ', shown);
-				text = text.substring(0, Math.max(space < 0 ? shown : space, 0));
+				text = text.substring(0, Math.max(shown, 0));
 			}
 		}
 		return line.partial() ? text + "…" : text;

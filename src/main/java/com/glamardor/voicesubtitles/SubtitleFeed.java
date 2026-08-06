@@ -52,10 +52,39 @@ public final class SubtitleFeed {
 		volatile boolean whisper;
 		/** Recognised text so far; empty while we only know that somebody is talking. */
 		volatile String text = "";
+		/**
+		 * The language this was said in, as far as the mod was told.
+		 *
+		 * <p>Set by whichever model recognised it, which is the only place that
+		 * knows: the text itself cannot be trusted to say, since a model handed a
+		 * language it does not know writes confident nonsense in its own alphabet.
+		 */
+		public volatile String spokenLanguage = "";
+		/** What it says in the language you read, once there is one. Empty otherwise. */
+		public volatile String translation = "";
+		/** True while a translation has been asked for and has not come back. */
+		public volatile boolean translating;
 		/** True while the recogniser may still extend or correct {@link #text}. */
 		volatile boolean partial = true;
 		volatile long startedAt;
 		volatile long lastAudioAt;
+		/**
+		 * When the first words appeared in this line, which is not when the line
+		 * did.
+		 *
+		 * <p>The two used to be the same thing, and that is why nobody ever saw
+		 * the text arrive a few characters at a time. A line opens when somebody
+		 * starts talking; the words turn up a second later, once the recogniser
+		 * has decided what they were. Counting the reveal from the start of the
+		 * speech meant a second's worth of characters – ninety of them – were
+		 * already allowed by the time there was anything to allow, so every
+		 * caption appeared whole.
+		 */
+		volatile long textSince;
+		/** How many characters have been revealed so far, carried between frames. */
+		volatile float revealed;
+		/** When that was last worked out. */
+		volatile long revealedAt;
 		/** When the utterance ended, or 0 while it is still going. */
 		volatile long closedAt;
 		/**
@@ -108,6 +137,59 @@ public final class SubtitleFeed {
 			return startedAt;
 		}
 
+		/** @return when the words appeared, or when the line did if they have not. */
+		public long textSince() {
+			return textSince == 0L ? startedAt : textSince;
+		}
+
+		/**
+		 * Moves the reveal on and says how much of the line may be shown.
+		 *
+		 * <p>The count is carried rather than worked out from the clock, and that
+		 * is the whole of it. Worked out from the clock, the allowance outruns the
+		 * speaking within a second – nobody talks at fifty-five characters a
+		 * second – and from then on every phrase the recogniser hands over is
+		 * already allowed in full and lands on screen whole. Which is exactly what
+		 * it looked like: two or three words typing themselves, and the rest of
+		 * the sentence arriving in slabs.
+		 *
+		 * <p>Carried and held back to what has actually been said, the count sits
+		 * waiting at the end of the text, and each new phrase is typed out from
+		 * where the last one stopped.
+		 *
+		 * @param speed characters per second
+		 * @return how many characters may be shown
+		 */
+		public int reveal(long now, int speed) {
+			long last = revealedAt;
+			if (last == 0L) {
+				revealedAt = now;
+				last = now;
+			}
+			if (now > last) {
+				revealed += (now - last) * Math.max(speed, 1) / 1000F;
+				revealedAt = now;
+			}
+			int length = text.length();
+			if (revealed > length) {
+				// Never further than what has been said, so there is always
+				// something left to type when the next words arrive.
+				revealed = length;
+			}
+			// And never much further behind it either. Without this the typing
+			// falls a whole sentence behind the speaking: the recogniser settles
+			// a long utterance in one go, the counter is somewhere in the middle
+			// of it, and the rest is then typed out over the second and a half
+			// after the speaker has stopped. Held to about four fifths of a
+			// second's worth, the tail arrives while it is still wanted, and
+			// there is still enough left to see it arrive.
+			float most = Math.max(20F, speed * 0.8F);
+			if (length - revealed > most) {
+				revealed = length - most;
+			}
+			return (int) revealed;
+		}
+
 		public long closedAt() {
 			return closedAt;
 		}
@@ -115,6 +197,15 @@ public final class SubtitleFeed {
 		/** @return true while nothing has been recognised yet. */
 		public boolean placeholder() {
 			return text.isEmpty();
+		}
+
+		public String translation() {
+			return translation;
+		}
+
+		/** @return true when there is a translation to show under the words. */
+		public boolean translated() {
+			return !translation.isEmpty();
 		}
 	}
 
@@ -145,10 +236,14 @@ public final class SubtitleFeed {
 		long now = System.currentTimeMillis();
 		Line line = new Line(speaker, Source.CHAT, now);
 		line.text = text;
+		line.textSince = now;
 		line.partial = false;
 		line.closedAt = now;
 		LINES.add(line);
 		trim();
+		// Written text says what language it is in by its own alphabet, so chat
+		// is translated without anybody having to be marked as anything.
+		com.glamardor.voicesubtitles.translate.Translation.requestChat(line);
 	}
 
 	/**
@@ -204,6 +299,11 @@ public final class SubtitleFeed {
 			// already settled once.
 			line.closedAt = 0L;
 		}
+		// Only the first words start the clock. A sentence the recogniser goes on
+		// refining must not begin revealing itself again on every pass.
+		if (line.textSince == 0L && !text.isEmpty()) {
+			line.textSince = now;
+		}
 		line.text = text;
 		line.partial = !finalText;
 		line.lastAudioAt = now;
@@ -247,7 +347,11 @@ public final class SubtitleFeed {
 				line.partial = false;
 			}
 			// A line still being worked on stays, however long it has been closed.
-			if (!line.open() && !line.held && now - line.closedAt > Captions.lifetimeOf(line)) {
+			// Being translated counts as being worked on: the first translation
+			// of an evening waits for its model, and losing the line meanwhile
+			// would file the sentence without the half somebody is waiting for.
+			if (!line.open() && !line.held && !line.translating
+					&& now - line.closedAt > Captions.lifetimeOf(line)) {
 				retire(line);
 			}
 		}
@@ -311,7 +415,7 @@ public final class SubtitleFeed {
 		int keep = Math.max(VoiceSubtitlesConfig.get().maxLines * 3, 12);
 		for (int i = 0; i < LINES.size() && LINES.size() > keep; i++) {
 			Line oldest = LINES.get(i);
-			if (!oldest.held) {
+			if (!oldest.held && !oldest.translating) {
 				retire(oldest);
 				i--;
 			}

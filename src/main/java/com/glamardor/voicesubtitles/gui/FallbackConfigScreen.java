@@ -2,6 +2,7 @@ package com.glamardor.voicesubtitles.gui;
 
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import com.glamardor.voicesubtitles.speech.SpeechRecognition;
+import com.glamardor.voicesubtitles.translate.Languages;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
@@ -78,7 +79,20 @@ public class FallbackConfigScreen extends Screen {
 		list.addWidget(textField("model_id", config.modelId, v -> config.modelId = v));
 		list.addWidget(toggle("auto_download", () -> config.autoDownloadModel, v -> config.autoDownloadModel = v));
 		list.addWidget(toggle("show_partial", () -> config.showPartial, v -> config.showPartial = v));
-		list.addWidget(plainSlider("max_recognizers", config.maxRecognizers, 1, 8, v -> config.maxRecognizers = v));
+		list.addWidget(plainSlider("max_recognizers", config.maxRecognizers, 1, 32, v -> config.maxRecognizers = v));
+
+		list.addHeader(category("translation"));
+		list.addWidget(cycle("translation_mode", () -> valueName("translation_mode", config.translationMode),
+				() -> config.translationMode =
+						next(VoiceSubtitlesConfig.TranslationMode.values(), config.translationMode)));
+		list.addWidget(cycle("my_language", () -> Languages.nameOf(config.myLanguage),
+				() -> config.myLanguage = nextLanguage(config.myLanguage)));
+		list.addWidget(cycle("default_spoken", () -> Languages.nameOf(config.defaultSpokenLanguage),
+				() -> config.defaultSpokenLanguage = nextLanguage(config.defaultSpokenLanguage)));
+		list.addWidget(toggle("translate_chat", () -> config.translateChat, v -> config.translateChat = v));
+		list.addWidget(toggle("show_original", () -> config.showOriginal, v -> config.showOriginal = v));
+		list.addWidget(toggle("auto_download_translation", () -> config.autoDownloadTranslation,
+				v -> config.autoDownloadTranslation = v));
 
 		list.addHeader(category("names"));
 		list.addWidget(cycle("name_source", () -> valueName("name_source", config.nameSource),
@@ -94,10 +108,12 @@ public class FallbackConfigScreen extends Screen {
 		list.addWidget(toggle("color_names", () -> config.colorNames, v -> config.colorNames = v));
 
 		list.addHeader(category("layout"));
-		list.addWidget(toggle("centered", () -> config.centered, v -> config.centered = v));
+		list.addWidget(cycle("feed_alignment", () -> valueName("alignment", config.feedAlignment),
+				() -> config.feedAlignment =
+						next(VoiceSubtitlesConfig.Alignment.values(), config.feedAlignment)));
 		list.addWidget(pixelSlider("bottom_offset", config.bottomOffset, 0, 200, v -> config.bottomOffset = v));
 		list.addWidget(percentSlider("max_width", config.maxWidthPercent, 20, 100, v -> config.maxWidthPercent = v));
-		list.addWidget(plainSlider("max_lines", config.maxLines, 1, 10, v -> config.maxLines = v));
+		list.addWidget(plainSlider("max_lines", config.maxLines, 1, 32, v -> config.maxLines = v));
 		list.addWidget(secondsSlider("lifetime", config.lineLifetimeMs, 500, 15000, v -> config.lineLifetimeMs = v));
 		list.addWidget(millisSlider("lifetime_per_char", config.lifetimePerCharMs, 0, 300,
 				v -> config.lifetimePerCharMs = v));
@@ -184,6 +200,17 @@ public class FallbackConfigScreen extends Screen {
 
 	private static <T extends Enum<T>> T next(T[] values, T current) {
 		return values[(current.ordinal() + 1) % values.length];
+	}
+
+	/** The next language in the list, wrapping round. */
+	private static String nextLanguage(String current) {
+		String[] codes = Languages.choices();
+		for (int i = 0; i < codes.length; i++) {
+			if (codes[i].equals(current)) {
+				return codes[(i + 1) % codes.length];
+			}
+		}
+		return codes[0];
 	}
 
 	private ClickableWidget toggle(String key, Supplier<Boolean> getter, Consumer<Boolean> setter) {

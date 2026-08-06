@@ -74,6 +74,10 @@ final class SherpaOfflineEngine implements SpeechEngine {
 		if (!Files.isRegularFile(tokens)) {
 			throw new IOException("No tokens.txt in " + dir);
 		}
+		// Said out loud before the library is asked to do anything, so that a log
+		// from a game that did not survive the next line still says what it was
+		// given.
+		VoiceSubtitles.LOGGER.info("Opening the '{}' model in {}", entry.id(), dir);
 
 		OfflineModelConfig.Builder model = OfflineModelConfig.builder()
 				.setTokens(tokens.toString())

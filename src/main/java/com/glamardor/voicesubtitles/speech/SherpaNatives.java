@@ -94,6 +94,44 @@ public final class SherpaNatives {
 		return build != null && Files.isDirectory(directory().resolve(build.folder()).resolve("lib"));
 	}
 
+	/**
+	 * Where the unpacked libraries for this machine are, or {@code null} if they
+	 * are not there.
+	 *
+	 * <p>Public because the translator needs one of them: onnxruntime is the same
+	 * library either way, and there is no sense downloading a second copy of it
+	 * once this one is on disk.
+	 */
+	public static Path libraryDirectory() {
+		Build build = buildForThisMachine();
+		if (build == null) {
+			return null;
+		}
+		Path lib = directory().resolve(build.folder()).resolve("lib");
+		return Files.isDirectory(lib) ? lib : null;
+	}
+
+	/**
+	 * The onnxruntime shared library itself, as opposed to sherpa's binding to it.
+	 *
+	 * @return the file, or {@code null} when it is not on disk
+	 */
+	public static Path onnxRuntimeLibrary() {
+		Path lib = libraryDirectory();
+		if (lib == null) {
+			return null;
+		}
+		try (Stream<Path> files = Files.list(lib)) {
+			return files.filter(path -> {
+				String name = path.getFileName().toString().toLowerCase(Locale.ROOT);
+				return name.contains("onnxruntime") && !name.contains("providers") && !name.contains("sherpa")
+						&& (name.endsWith(".dll") || name.endsWith(".dylib") || name.contains(".so"));
+			}).findFirst().orElse(null);
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
 	public static boolean isLoaded() {
 		return loaded;
 	}

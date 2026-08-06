@@ -68,6 +68,9 @@ public final class SubtitlePreview {
 		}
 		if (System.currentTimeMillis() >= until) {
 			SubtitleFeed.setText(line, sample, true);
+			// Put through the translator too, judged by its alphabet, so the whole
+			// thing can be seen working without waiting for somebody to talk.
+			com.glamardor.voicesubtitles.translate.Translation.requestChat(line);
 			SubtitleFeed.release(line);
 			line = null;
 			return;

@@ -3,6 +3,7 @@ package com.glamardor.voicesubtitles.speech;
 import com.glamardor.voicesubtitles.VoiceSubtitles;
 import net.fabricmc.loader.api.FabricLoader;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -124,6 +125,22 @@ public final class SpeechModels {
 	}
 
 	/**
+	 * The model that unpacks into a particular directory.
+	 *
+	 * <p>For reading a model back out of something that stores it by folder rather
+	 * than by id, which is how it sits on disk and how {@link BundledAssets}
+	 * carries it inside the jar.
+	 */
+	public static Entry byFolder(String folder) {
+		for (Entry entry : CATALOGUE.values()) {
+			if (entry.folder().equals(folder)) {
+				return entry;
+			}
+		}
+		return null;
+	}
+
+	/**
 	 * The model to start with for a language, before anybody has chosen one.
 	 *
 	 * <p>Russian gets GigaAM rather than the plain Vosk model it shares a name
@@ -150,19 +167,94 @@ public final class SpeechModels {
 		return modelsDirectory().resolve(entry.folder());
 	}
 
+	/** Written once everything is unpacked, so a half-unpacked model is not mistaken for one. */
+	private static final String MARKER = ".installed";
+
 	/**
-	 * A model counts as installed once the file the engine actually opens is
-	 * there: an interrupted download leaves a directory behind, and a directory
-	 * on its own proves nothing.
+	 * A model counts as installed once all of it is there.
+	 *
+	 * <p>This used to ask only whether one file existed, and that was not
+	 * enough. A download cut halfway leaves a directory with some of the model
+	 * in it, the check passed, and the engine was handed a truncated file – at
+	 * which point the native library throws a C++ exception, which takes the
+	 * whole game down without a crash report. Two players lost their game to
+	 * exactly that.
+	 *
+	 * <p>So: the marker written at the end of a successful install, or, for
+	 * models installed before this mod wrote one, a look at whether the files
+	 * add up to something like the size they should.
 	 */
 	public static boolean isInstalled(Entry entry) {
 		Path path = pathOf(entry);
 		if (!Files.isDirectory(path)) {
 			return false;
 		}
-		return entry.engine() == Engine.VOSK
+		if (Files.isRegularFile(path.resolve(MARKER))) {
+			return true;
+		}
+		boolean shaped = entry.engine() == Engine.VOSK
 				? Files.isDirectory(path.resolve("am"))
-				: Files.isRegularFile(path.resolve("tokens.txt"));  // both sherpa kinds
+				: Files.isRegularFile(path.resolve("tokens.txt")) && hasModelFile(path);
+		if (!shaped) {
+			return false;
+		}
+		// Three fifths of the download size: these archives hold data that is
+		// already compressed, so unpacking them makes them bigger, never much
+		// smaller. Anything under that is a model with a piece missing.
+		long expected = (long) entry.megabytes() * 1024L * 1024L * 3L / 5L;
+		if (sizeOf(path) < expected) {
+			return false;
+		}
+		// It is whole, so say so on disk and never count it again: this walks the
+		// folder, and the answer is wanted every time the settings screen closes.
+		try {
+			markInstalled(entry);
+		} catch (IOException ignored) {
+		}
+		return true;
+	}
+
+	/** Marks a model as completely installed. */
+	static void markInstalled(Entry entry) throws IOException {
+		Files.writeString(pathOf(entry).resolve(MARKER), entry.id() + "\n");
+	}
+
+	/** Throws a model away, so the next attempt fetches a whole one. */
+	public static void discard(Entry entry) {
+		Path path = pathOf(entry);
+		try (java.util.stream.Stream<Path> walk = Files.walk(path)) {
+			walk.sorted(java.util.Comparator.reverseOrder()).forEach(file -> {
+				try {
+					Files.deleteIfExists(file);
+				} catch (IOException ignored) {
+				}
+			});
+			VoiceSubtitles.LOGGER.warn("Threw away the model at {}", path);
+		} catch (IOException e) {
+			VoiceSubtitles.LOGGER.warn("Could not throw away the model at {}", path, e);
+		}
+	}
+
+	private static boolean hasModelFile(Path path) {
+		try (java.util.stream.Stream<Path> files = Files.list(path)) {
+			return files.anyMatch(file -> file.getFileName().toString().endsWith(".onnx"));
+		} catch (IOException e) {
+			return false;
+		}
+	}
+
+	private static long sizeOf(Path path) {
+		try (java.util.stream.Stream<Path> walk = Files.walk(path)) {
+			return walk.filter(Files::isRegularFile).mapToLong(file -> {
+				try {
+					return Files.size(file);
+				} catch (IOException e) {
+					return 0L;
+				}
+			}).sum();
+		} catch (IOException e) {
+			return 0L;
+		}
 	}
 
 	/**
@@ -186,6 +278,7 @@ public final class SpeechModels {
 			Archives.extractZip(archive, models, progress);
 		}
 		Files.deleteIfExists(archive);
+		markInstalled(entry);
 		VoiceSubtitles.LOGGER.info("Model {} installed at {}", entry.id(), pathOf(entry));
 	}
 }

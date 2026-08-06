@@ -304,7 +304,11 @@ final class LogStore {
 					case EVENT -> "event";
 					case VOICE -> "voice";
 				}
-				+ "\",\"x\":\"" + escape(entry.text()) + "\"}";
+				+ "\",\"x\":\"" + escape(entry.text()) + "\""
+				// Written only when there is one, so a log with no translation in
+				// it is byte for byte the log this mod always wrote.
+				+ (entry.translated() ? ",\"tr\":\"" + escape(entry.translation()) + "\"" : "")
+				+ "}";
 	}
 
 	private static SubtitleLog.Entry decode(String line) {
@@ -319,7 +323,8 @@ final class LogStore {
 				case "event" -> SubtitleFeed.Source.EVENT;
 				default -> SubtitleFeed.Source.VOICE;
 			};
-			return new SubtitleLog.Entry(time, id, name, kind, text);
+			String translation = line.contains("\"tr\":") ? unescape(quoted(line, "\"tr\":")) : "";
+			return new SubtitleLog.Entry(time, id, name, kind, text, translation);
 		} catch (Exception e) {
 			// A half-written last line after a crash is not worth a stack trace.
 			return null;

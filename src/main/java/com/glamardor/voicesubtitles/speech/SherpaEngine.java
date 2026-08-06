@@ -100,11 +100,100 @@ final class SherpaEngine implements SpeechEngine {
 	 * is the quantised build.
 	 */
 	static Path findModelFile(Path dir, String prefix) throws IOException {
-		return find(dir, prefix);
+		Path found = find(dir, prefix);
+		return found == null ? null : verify(found);
 	}
 
 	static Path requireModelFile(Path dir, String prefix) throws IOException {
-		return require(dir, prefix);
+		return verify(require(dir, prefix));
+	}
+
+	/**
+	 * Reads enough of a model file to be sure it can be read at all.
+	 *
+	 * <p>Because the library that reads it properly cannot be argued with. Handed
+	 * a file it cannot open, sherpa-onnx throws a C++ exception, and a C++
+	 * exception crossing back into Java takes the whole game down: no crash
+	 * report, no message, nothing but a line saying the process died in native
+	 * code. Two players lost their game to it, both within a third of a second of
+	 * the library loading – far too soon to have read two hundred megabytes, so
+	 * the file was never opened at all.
+	 *
+	 * <p>Antivirus software is the usual reason. A two-hundred-megabyte file that
+	 * has just appeared on disk is exactly what it wants to look at, and while it
+	 * is looking, everything else trying to read that file is turned away.
+	 *
+	 * <p>So the whole file is read here first, start to end, and thrown away. It
+	 * costs a second of disk on a background thread and it settles the question
+	 * before the library is involved: either the read succeeds, in which case the
+	 * scanner has finished with it and the library will be let in too, or it
+	 * fails here, in Java, where a failure is a caption that never appears rather
+	 * than a game that dies. Failing that, it waits and tries again, because a
+	 * scan that is under way finishes on its own.
+	 *
+	 * <p>This is why the mod does not ask anybody to make an exception for it in
+	 * their antivirus. Being told to switch off the thing protecting your machine
+	 * is what malware asks for, and a mod that needs it asked for is a mod with a
+	 * bug in it.
+	 *
+	 * @return the same path, once it has proved readable
+	 * @throws IOException if it cannot be read, or does not look like a model
+	 */
+	private static Path verify(Path file) throws IOException {
+		long size = Files.size(file);
+		// Low on purpose. The smallest real piece of a model here is a joiner of
+		// a megabyte and a half, and the point of this number is to catch a file
+		// that is empty or a few kilobytes of nothing, not to judge how big a
+		// model ought to be.
+		if (size < 64L * 1024L) {
+			throw new IOException("Model file " + file.getFileName() + " is only " + size
+					+ " bytes; it did not finish downloading");
+		}
+
+		IOException last = null;
+		for (int attempt = 1; attempt <= READ_ATTEMPTS; attempt++) {
+			try {
+				long began = System.currentTimeMillis();
+				readWhole(file);
+				VoiceSubtitles.LOGGER.info("Model file {} read in full, {} MB in {} ms",
+						file.getFileName(), size / 1048576L, System.currentTimeMillis() - began);
+				return file;
+			} catch (IOException e) {
+				last = e;
+				VoiceSubtitles.LOGGER.warn("Could not read {} (attempt {} of {}): {}",
+						file.getFileName(), attempt, READ_ATTEMPTS, e.getMessage());
+				try {
+					Thread.sleep(READ_RETRY_MS);
+				} catch (InterruptedException interrupted) {
+					Thread.currentThread().interrupt();
+					break;
+				}
+			}
+		}
+		throw new IOException("Model file " + file + " could not be read after " + READ_ATTEMPTS
+				+ " attempts: " + (last == null ? "?" : last.getMessage()), last);
+	}
+
+	/** How many times a file is given the chance to become readable. */
+	private static final int READ_ATTEMPTS = 4;
+
+	/** How long to wait between those, while a scanner finishes with it. */
+	private static final long READ_RETRY_MS = 3000L;
+
+	private static void readWhole(Path file) throws IOException {
+		try (java.io.InputStream in = new java.io.BufferedInputStream(Files.newInputStream(file), 1 << 16)) {
+			// Every ONNX model is a protobuf beginning with its version field,
+			// which is field one as a varint: byte 0x08.
+			int first = in.read();
+			if (first != 0x08) {
+				throw new IOException("does not begin like an ONNX model (first byte 0x"
+						+ Integer.toHexString(first) + "), so it is damaged rather than merely busy");
+			}
+			byte[] buffer = new byte[1 << 16];
+			while (in.read(buffer) > 0) {
+				// Reading is the whole point; what was read is of no interest.
+			}
+		}
 	}
 
 	private static Path find(Path dir, String prefix) throws IOException {

@@ -22,12 +22,15 @@ public final class DownloadState {
 	private static volatile boolean active;
 	/** True once the bytes are in and the slow part starts: checking and unpacking. */
 	private static volatile boolean installing;
+	/** True when nothing is being fetched at all: the bytes were inside the mod. */
+	private static volatile boolean unpacking;
 
 	private DownloadState() {
 	}
 
 	/** One reading of the state, so the renderer sees consistent numbers. */
-	public record Snapshot(Text label, long read, long total, long elapsedMillis, boolean installing) {
+	public record Snapshot(Text label, long read, long total, long elapsedMillis, boolean installing,
+	                       boolean unpacking) {
 
 		/** @return 0–1, or -1 when the server did not say how big the file is */
 		public float fraction() {
@@ -53,13 +56,28 @@ public final class DownloadState {
 		}
 	}
 
-	static void begin(Text what) {
+	public static void begin(Text what) {
 		label = what;
 		read = 0L;
 		total = -1L;
 		startedAt = System.currentTimeMillis();
 		active = true;
 		installing = false;
+		unpacking = false;
+	}
+
+	/**
+	 * The same wait, with nothing coming over the network: the full build copying
+	 * what it was packed with out of its own jar.
+	 *
+	 * <p>Told apart from a download because it is worth saying which it is. A bar
+	 * that reads "downloading" on a machine that is not downloading anything is a
+	 * bar that will be asked about.
+	 */
+	public static void unpacking(Text what, long bytes) {
+		begin(what);
+		unpacking = true;
+		total = bytes;
 	}
 
 	/**
@@ -69,19 +87,19 @@ public final class DownloadState {
 	 * take long enough that a bar sitting at 100 % looks like a bar that has
 	 * stopped, and the natural response to that is to close the game.
 	 */
-	static void installing() {
+	public static void installing() {
 		installing = true;
 		read = 0L;
 		total = -1L;
 		startedAt = System.currentTimeMillis();
 	}
 
-	static void update(long bytesRead, long bytesTotal) {
+	public static void update(long bytesRead, long bytesTotal) {
 		read = bytesRead;
 		total = bytesTotal;
 	}
 
-	static void end() {
+	public static void end() {
 		active = false;
 	}
 
@@ -94,6 +112,6 @@ public final class DownloadState {
 		if (!active) {
 			return null;
 		}
-		return new Snapshot(label, read, total, System.currentTimeMillis() - startedAt, installing);
+		return new Snapshot(label, read, total, System.currentTimeMillis() - startedAt, installing, unpacking);
 	}
 }
