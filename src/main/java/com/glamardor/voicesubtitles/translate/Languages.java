@@ -67,21 +67,44 @@ public final class Languages {
 	}
 
 	/**
+	 * The languages there is a translation for, in the order they are offered.
+	 *
+	 * <p>Two of them: Russian and English, which is what OPUS-MT has been exported
+	 * to ONNX for and what this mod was built for. The recognition catalogue knows
+	 * ten, but a language that can be recognised and not translated is a caption in
+	 * an alphabet you cannot read, and offering it as a choice is offering that.
+	 */
+	public static java.util.List<String> translatable() {
+		java.util.List<String> codes = new java.util.ArrayList<>();
+		for (TranslationModels.Entry entry : TranslationModels.catalogue().values()) {
+			if (!codes.contains(entry.from())) {
+				codes.add(entry.from());
+			}
+			if (!codes.contains(entry.to())) {
+				codes.add(entry.to());
+			}
+		}
+		return codes;
+	}
+
+	/**
 	 * The languages a setting may be set to, in the order they are offered.
 	 *
-	 * <p>Everything the model catalogue can recognise, since choosing a language
-	 * there is no model for would be choosing silence. The empty string comes
-	 * first and means "work it out": the game's language for what you read, and
-	 * what you read for what everybody here speaks.
+	 * <p>The empty string comes first and means "work it out": the game's language
+	 * for what you read, and what you read for what everybody here speaks.
+	 *
+	 * <p>Whatever is already set is kept in the list even when it is neither of the
+	 * two, so that a setting somebody chose by hand is not quietly changed to
+	 * something else the next time they open the screen.
 	 */
 	public static String[] choices() {
 		java.util.List<String> codes = new java.util.ArrayList<>();
 		codes.add("");
-		for (com.glamardor.voicesubtitles.speech.SpeechModels.Entry entry
-				: com.glamardor.voicesubtitles.speech.SpeechModels.catalogue().values()) {
-			String code = entry.id().split("-")[0];
-			if (!codes.contains(code)) {
-				codes.add(code);
+		codes.addAll(translatable());
+		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
+		for (String set : new String[]{cfg.myLanguage, cfg.defaultSpokenLanguage}) {
+			if (set != null && !set.isBlank() && !codes.contains(set)) {
+				codes.add(set);
 			}
 		}
 		return codes.toArray(new String[0]);

@@ -62,20 +62,27 @@ public final class SubtitleCommands {
 	};
 
 	/**
-	 * The languages the mod can actually recognise, plus "reset".
+	 * The languages there is a translation for, plus "reset".
 	 *
-	 * <p>Everything in the model catalogue, since marking somebody as speaking a
-	 * language there is no model for would be marking them as unintelligible.
+	 * <p>Two of them, and each offered once. It used to be the whole model
+	 * catalogue, which meant a list reading "en, en, en, en, ru, ru, ru…" – one
+	 * line per model rather than per language, with the four English models and the
+	 * nine Russian ones all shortening to the same two words. What a language is
+	 * called goes in the tooltip beside it.
+	 *
+	 * <p>A language that is only in the recognition catalogue is still accepted if
+	 * it is typed out: marking a German speaker gets their words written in German
+	 * letters, which is worth having even where nothing can translate them. It is
+	 * simply not suggested, because for nearly everybody it is the wrong answer.
 	 */
 	private static final SuggestionProvider<FabricClientCommandSource> LANGUAGE_SUGGESTIONS = (ctx, builder) -> {
 		String remaining = builder.getRemainingLowerCase();
 		if ("reset".startsWith(remaining)) {
 			builder.suggest("reset", Text.translatable("commands.voice_subtitles.lang.reset"));
 		}
-		for (SpeechModels.Entry entry : SpeechModels.catalogue().values()) {
-			String code = entry.id().split("-")[0];
+		for (String code : Languages.translatable()) {
 			if (code.startsWith(remaining)) {
-				builder.suggest(code, Text.literal(entry.language()));
+				builder.suggest(code, Languages.nameOf(code));
 			}
 		}
 		return builder.buildFuture();
@@ -174,7 +181,9 @@ public final class SubtitleCommands {
 		SpeechRecognition.reload();
 
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
-		source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.set", playerName, code));
+		// The name rather than the code: "speaks English" is an answer, "speaks en"
+		// is a receipt for what was typed.
+		source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.set", playerName, Languages.nameOf(code)));
 		if (!cfg.translationMode.routes()) {
 			// Marking somebody without turning routing on does nothing at all,
 			// and saying so beats leaving them to wonder why.
@@ -187,7 +196,8 @@ public final class SubtitleCommands {
 	/** Everybody who has been marked, and what the rest are taken to speak. */
 	private static int listLanguages(FabricClientCommandSource source) {
 		source.sendFeedback(Text.translatable("commands.voice_subtitles.lang.default",
-				Languages.defaultSpoken(), Languages.mine()).formatted(Formatting.GRAY));
+				Languages.nameOf(Languages.defaultSpoken()), Languages.nameOf(Languages.mine()))
+				.formatted(Formatting.GRAY));
 
 		Map<String, String> named = Languages.named();
 		if (named.isEmpty()) {
@@ -199,7 +209,8 @@ public final class SubtitleCommands {
 				UUID id = UUID.fromString(marked.getKey());
 				source.sendFeedback(Text.literal("  ")
 						.append(NameResolver.nameOf(id))
-						.append(Text.literal(" – " + marked.getValue()).formatted(Formatting.GRAY)));
+						.append(Text.literal(" – ").formatted(Formatting.GRAY))
+						.append(Languages.nameOf(marked.getValue()).copy().formatted(Formatting.GRAY)));
 			} catch (IllegalArgumentException ignored) {
 			}
 		}
