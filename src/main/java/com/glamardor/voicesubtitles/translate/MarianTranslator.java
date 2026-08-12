@@ -138,13 +138,146 @@ final class MarianTranslator implements AutoCloseable {
 	}
 
 	/**
-	 * Translates one sentence.
+	 * Translates a line, a sentence at a time.
+	 *
+	 * <p>A sentence at a time because that is what Marian was trained on and what
+	 * it will do whatever it is handed: given "Hey my name is Denis. What is your
+	 * name?" in one go it translates the first sentence, decides it has finished
+	 * and stops, and the second sentence is simply lost. Which one survives is
+	 * whichever came first, so the same two sentences in the other order came back
+	 * as the other half – which is what made it look like the model was shuffling
+	 * them rather than dropping them.
+	 *
+	 * <p>The cost is a full pass per sentence, on a background thread nobody is
+	 * waiting on. A line with one sentence in it – nearly all of them – goes
+	 * through exactly as it did before.
 	 *
 	 * <p>Synchronised because a session is cheap to share and expensive to
 	 * duplicate: two translations at once would double the memory for no gain on
 	 * a single-threaded session.
 	 */
 	synchronized String translate(String text) throws OrtException {
+		List<String> sentences = sentences(text);
+		if (sentences.size() < 2) {
+			return translateOne(text);
+		}
+		StringBuilder out = new StringBuilder();
+		for (String sentence : sentences) {
+			String piece = translateOne(sentence);
+			if (piece.isBlank()) {
+				continue;
+			}
+			if (out.length() > 0) {
+				out.append(' ');
+			}
+			out.append(piece);
+		}
+		return out.toString();
+	}
+
+	/** Anything that can sit after a full stop and still belong to that sentence. */
+	private static final String CLOSERS = ".!?…\"'»)]”";
+
+	/**
+	 * More sentences than this in one line and the rest are translated as a block.
+	 *
+	 * <p>Nobody says twelve sentences into a voice chat without drawing breath, and
+	 * a line that long is a paste rather than speech.
+	 */
+	private static final int MAX_SENTENCES = 12;
+
+	/**
+	 * Cuts a line into sentences.
+	 *
+	 * <p>On a full stop, a question or an exclamation mark followed by a space, and
+	 * nowhere else: a stop in the middle of a word is a decimal or an address, and a
+	 * stop after a single letter is an initial. A stop after a bare number is a date
+	 * or a numbered point rather than an ending, but a stop after "X1" is an ending,
+	 * because that is a masked player name and the sentence really did finish there.
+	 */
+	static List<String> sentences(String text) {
+		List<String> out = new ArrayList<>();
+		StringBuilder current = new StringBuilder();
+		int length = text.length();
+
+		for (int i = 0; i < length; i++) {
+			current.append(text.charAt(i));
+			if (".!?…".indexOf(text.charAt(i)) < 0) {
+				continue;
+			}
+			// Whatever else closes the sentence goes with it: "?!", "...", the
+			// quotation mark somebody was speaking inside of.
+			int end = i + 1;
+			while (end < length && CLOSERS.indexOf(text.charAt(end)) >= 0) {
+				current.append(text.charAt(end));
+				end++;
+			}
+			i = end - 1;
+			if (end >= length || !Character.isWhitespace(text.charAt(end)) || !ends(current)) {
+				continue;
+			}
+			out.add(current.toString().trim());
+			current.setLength(0);
+			if (out.size() >= MAX_SENTENCES) {
+				String rest = text.substring(end).trim();
+				if (!rest.isEmpty()) {
+					out.add(rest);
+				}
+				return out;
+			}
+		}
+
+		String tail = current.toString().trim();
+		if (tail.isEmpty()) {
+			return out;
+		}
+		if (out.isEmpty() || hasLetters(tail)) {
+			// The last sentence, simply left unfinished: most of what is typed
+			// into a chat box ends without a full stop.
+			out.add(tail);
+		} else {
+			// A trailing scrap with nothing to say on its own – a stray bracket, a
+			// lone dash – belongs to the sentence in front of it, not to the model.
+			out.set(out.size() - 1, out.get(out.size() - 1) + " " + tail);
+		}
+		return out;
+	}
+
+	private static boolean hasLetters(String text) {
+		for (int i = 0; i < text.length(); i++) {
+			if (Character.isLetter(text.charAt(i))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Whether a sentence really ends here, or the full stop belongs to what is in front of it. */
+	private static boolean ends(CharSequence sentence) {
+		int last = sentence.length() - 1;
+		while (last >= 0 && CLOSERS.indexOf(sentence.charAt(last)) >= 0) {
+			last--;
+		}
+		if (last < 0) {
+			return false;
+		}
+		int start = last;
+		while (start >= 0 && Character.isLetterOrDigit(sentence.charAt(start))) {
+			start--;
+		}
+		String word = sentence.subSequence(start + 1, last + 1).toString();
+		if (word.isEmpty()) {
+			return true;
+		}
+		boolean number = true;
+		for (int i = 0; i < word.length(); i++) {
+			number &= Character.isDigit(word.charAt(i));
+		}
+		return !number && word.length() > 1;
+	}
+
+	/** One sentence through the encoder and the decoder. */
+	private String translateOne(String text) throws OrtException {
 		long[] source = source(text);
 		if (source.length <= 1) {
 			return "";
