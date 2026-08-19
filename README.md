@@ -1,6 +1,6 @@
 # Voice Subtitles
 
-Live subtitles for [Simple Voice Chat](https://modrinth.com/plugin/simple-voice-chat): who is speaking, and what they are saying, in a caption feed along the bottom of the screen.
+Live subtitles for [Simple Voice Chat](https://modrinth.com/plugin/simple-voice-chat): who is speaking, and what they are saying, in a caption feed along the bottom of the screen, or along the top if that suits your interface better.
 
 **Voice chat leaves some players out.** If you are deaf or hard of hearing, proximity voice chat is a conversation happening around you that you cannot join – on roleplay servers, where most of the story is told out loud, that means missing the game itself. The same is true if you play with the sound off, in a noisy room, or in a language you read more easily than you hear. This mod puts that conversation on screen.
 

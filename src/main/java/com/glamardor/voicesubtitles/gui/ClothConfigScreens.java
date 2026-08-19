@@ -149,8 +149,12 @@ final class ClothConfigScreens {
 		ConfigCategory layout = category(builder, "layout");
 		layout.addEntry(enumSelector(entries, "feed_alignment", VoiceSubtitlesConfig.Alignment.class,
 				config.feedAlignment, defaults.feedAlignment, v -> config.feedAlignment = v, "alignment"));
+		layout.addEntry(enumSelector(entries, "feed_anchor", VoiceSubtitlesConfig.Anchor.class,
+				config.feedAnchor, defaults.feedAnchor, v -> config.feedAnchor = v, "anchor"));
 		layout.addEntry(slider(entries, "bottom_offset", config.bottomOffset, defaults.bottomOffset, 0, 200,
 				v -> config.bottomOffset = v, ClothConfigScreens::pixels));
+		layout.addEntry(slider(entries, "top_offset", config.topOffset, defaults.topOffset, 0, 200,
+				v -> config.topOffset = v, ClothConfigScreens::pixels));
 		layout.addEntry(percent(entries, "max_width", config.maxWidthPercent, defaults.maxWidthPercent, 20, 100,
 				v -> config.maxWidthPercent = v));
 		layout.addEntry(slider(entries, "max_lines", config.maxLines, defaults.maxLines, 1, 32,

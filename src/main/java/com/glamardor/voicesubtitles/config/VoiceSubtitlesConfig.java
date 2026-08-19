@@ -113,6 +113,14 @@ public class VoiceSubtitlesConfig {
 		RIGHT
 	}
 
+	/** Which edge of the screen the feed is anchored to. */
+	public enum Anchor {
+		/** Above the hotbar, where subtitles belong (default). */
+		BOTTOM,
+		/** Along the top, out of the way of everything the bottom of the screen is already full of. */
+		TOP
+	}
+
 	/** How a speaker's text is coloured. */
 	public enum ColorMode {
 		/** Everybody white (default). */
@@ -178,8 +186,23 @@ public class VoiceSubtitlesConfig {
 	 * it every time it was opened.
 	 */
 	public Alignment feedAlignment = Alignment.CENTER;
-	/** Distance from the bottom of the screen, in GUI pixels. */
+	/**
+	 * Which edge of the screen the feed hangs from.
+	 *
+	 * <p>Given a value here for the same reason {@link #feedAlignment} is: the settings screen reads
+	 * its defaults off a fresh instance, which never goes through {@link #sanitize()}.
+	 */
+	public Anchor feedAnchor = Anchor.BOTTOM;
+	/** Distance from the bottom of the screen, in GUI pixels. Used when anchored to the bottom. */
 	public int bottomOffset = 58;
+	/**
+	 * Distance from the top of the screen, in GUI pixels. Used when anchored to the top.
+	 *
+	 * <p>Its own setting rather than the one above: the bottom of the screen has a hotbar to clear
+	 * and the top has nothing, so the two want quite different numbers and a player who moves the
+	 * feed from one to the other should not have to set the distance again each time.
+	 */
+	public int topOffset = 12;
 	/** Maximum feed width, as a percentage of the screen width. */
 	public int maxWidthPercent = 62;
 	/** How many speech lines are visible at once. */
@@ -466,6 +489,7 @@ public class VoiceSubtitlesConfig {
 		if (modelLoadMillis == null) modelLoadMillis = new LinkedHashMap<>();
 		if (translationMode == null) translationMode = TranslationMode.OFF;
 		if (feedAlignment == null) feedAlignment = Alignment.CENTER;
+		if (feedAnchor == null) feedAnchor = Anchor.BOTTOM;
 		if (speakerLanguages == null) speakerLanguages = new LinkedHashMap<>();
 		if (myLanguage == null) myLanguage = "";
 		if (defaultSpokenLanguage == null) defaultSpokenLanguage = "";
@@ -476,6 +500,7 @@ public class VoiceSubtitlesConfig {
 		backgroundOpacity = clamp(backgroundOpacity, 0, 100);
 		maxWidthPercent = clamp(maxWidthPercent, 20, 100);
 		bottomOffset = clamp(bottomOffset, 0, 200);
+		topOffset = clamp(topOffset, 0, 200);
 		textScalePercent = clamp(textScalePercent, 50, 200);
 		farOpacity = clamp(farOpacity, 10, 100);
 		whisperOpacity = clamp(whisperOpacity, 10, 100);

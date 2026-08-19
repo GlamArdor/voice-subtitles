@@ -63,6 +63,9 @@ public final class SubtitleHud {
 	 */
 	private static final int CINEMA_BOTTOM_OFFSET = 8;
 
+	/** The same, for a feed hanging from the top. */
+	private static final int CINEMA_TOP_OFFSET = 8;
+
 	private SubtitleHud() {
 	}
 
@@ -88,20 +91,32 @@ public final class SubtitleHud {
 			render(context, tickCounter);
 			return;
 		}
-		// Sat just on top of the bottom matte: lifted clear of the black, and
-		// without the hotbar allowance that has nothing to clear in cinema mode.
+		// Sat just clear of the matte on whichever side it is on: lifted off the
+		// black, and without the hotbar allowance that has nothing to clear in
+		// cinema mode. A feed along the top clears the top matte the same way,
+		// which is downwards.
+		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
+		boolean top = cfg.feedAnchor == VoiceSubtitlesConfig.Anchor.TOP;
 		int lift = CinemaCompat.barHeight(context);
 		context.getMatrices().pushMatrix();
-		context.getMatrices().translate(0F, -lift);
-		render(context, tickCounter, Math.min(VoiceSubtitlesConfig.get().bottomOffset, CINEMA_BOTTOM_OFFSET));
+		context.getMatrices().translate(0F, top ? lift : -lift);
+		render(context, tickCounter, top
+				? Math.min(cfg.topOffset, CINEMA_TOP_OFFSET)
+				: Math.min(cfg.bottomOffset, CINEMA_BOTTOM_OFFSET));
 		context.getMatrices().popMatrix();
 	}
 
 	public static void render(DrawContext context, RenderTickCounter tickCounter) {
-		render(context, tickCounter, VoiceSubtitlesConfig.get().bottomOffset);
+		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
+		render(context, tickCounter,
+				cfg.feedAnchor == VoiceSubtitlesConfig.Anchor.TOP ? cfg.topOffset : cfg.bottomOffset);
 	}
 
-	private static void render(DrawContext context, RenderTickCounter tickCounter, int bottomOffset) {
+	/**
+	 * @param edgeOffset how far the feed sits from the edge it hangs off, which is the bottom of the
+	 *                   screen or the top of it depending on the setting
+	 */
+	private static void render(DrawContext context, RenderTickCounter tickCounter, int edgeOffset) {
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
 		if (!cfg.enabled) {
 			return;
@@ -121,9 +136,13 @@ public final class SubtitleHud {
 		// Drawn whether or not anybody is talking: a download that takes minutes
 		// and a model that takes a minute to load both need to say so, and they
 		// need to say it before the first caption fails to appear, not after.
+		boolean fromTop = cfg.feedAnchor == VoiceSubtitlesConfig.Anchor.TOP;
+		// Downloads and models say so at the bottom of the screen whether or not
+		// the feed is down there: it is a notice about the mod rather than part
+		// of the conversation, and it has always sat above the hotbar.
 		int loadingHeight = ProgressOverlay.render(context, textRenderer,
 				context.getScaledWindowWidth() / 2,
-				context.getScaledWindowHeight() - bottomOffset);
+				context.getScaledWindowHeight() - (fromTop ? cfg.bottomOffset : edgeOffset));
 
 		if (lines.isEmpty()) {
 			return;
@@ -168,21 +187,28 @@ public final class SubtitleHud {
 			captions = captions.subList(captions.size() - cfg.maxLines, captions.size());
 		}
 
-		int bottom = screenHeight - bottomOffset - Math.round(loadingHeight / scale);
+		// Where the stack starts, on whichever edge it hangs off. Anchored to the
+		// bottom it also gets out of the way of the chat box and of anything the
+		// download notice has taken; neither of those is anywhere near the top.
+		int bottom = screenHeight - edgeOffset - Math.round(loadingHeight / scale);
 		if (client.currentScreen instanceof ChatScreen) {
 			bottom -= CHAT_OFFSET;
 		}
+		int start = edgeOffset + PADDING;
 
 		context.getMatrices().pushMatrix();
 		context.getMatrices().scale(scale, scale);
 
-		// Drawn bottom-up: the newest caption sits closest to the hotbar.
-		int y = bottom;
-		for (int i = captions.size() - 1; i >= 0; i--) {
-			Caption caption = captions.get(i);
+		// Oldest first, reading downwards, either way round: at the bottom the
+		// stack grows upwards from the newest caption, at the top it grows
+		// downwards from the oldest, and both put the newest words nearest the
+		// middle of the screen where the eye already is.
+		int y = fromTop ? start : bottom;
+		for (int step = 0; step < captions.size(); step++) {
+			Caption caption = captions.get(fromTop ? step : captions.size() - 1 - step);
 			int blockHeight = (caption.rows.size() + caption.translation.size()) * TEXT_HEIGHT;
 			int blockWidth = arrowOffset + headOffset + caption.width;
-			int top = y - blockHeight;
+			int top = fromTop ? y : y - blockHeight;
 
 			int x = switch (cfg.feedAlignment) {
 				case LEFT -> 8 + PADDING;
@@ -193,9 +219,16 @@ public final class SubtitleHud {
 			drawCaption(context, textRenderer, caption, x, top, blockWidth, blockHeight,
 					arrowOffset, headOffset, cfg);
 
-			y = top - LINE_GAP - PADDING * 2;
-			if (y < 0) {
-				break;
+			if (fromTop) {
+				y = top + blockHeight + LINE_GAP + PADDING * 2;
+				if (y > screenHeight) {
+					break;
+				}
+			} else {
+				y = top - LINE_GAP - PADDING * 2;
+				if (y < 0) {
+					break;
+				}
 			}
 		}
 

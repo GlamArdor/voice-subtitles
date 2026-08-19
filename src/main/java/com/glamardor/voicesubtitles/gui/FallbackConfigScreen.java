@@ -111,7 +111,11 @@ public class FallbackConfigScreen extends Screen {
 		list.addWidget(cycle("feed_alignment", () -> valueName("alignment", config.feedAlignment),
 				() -> config.feedAlignment =
 						next(VoiceSubtitlesConfig.Alignment.values(), config.feedAlignment)));
+		list.addWidget(cycle("feed_anchor", () -> valueName("anchor", config.feedAnchor),
+				() -> config.feedAnchor =
+						next(VoiceSubtitlesConfig.Anchor.values(), config.feedAnchor)));
 		list.addWidget(pixelSlider("bottom_offset", config.bottomOffset, 0, 200, v -> config.bottomOffset = v));
+		list.addWidget(pixelSlider("top_offset", config.topOffset, 0, 200, v -> config.topOffset = v));
 		list.addWidget(percentSlider("max_width", config.maxWidthPercent, 20, 100, v -> config.maxWidthPercent = v));
 		list.addWidget(plainSlider("max_lines", config.maxLines, 1, 32, v -> config.maxLines = v));
 		list.addWidget(secondsSlider("lifetime", config.lineLifetimeMs, 500, 15000, v -> config.lineLifetimeMs = v));
