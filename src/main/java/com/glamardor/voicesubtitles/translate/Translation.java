@@ -486,8 +486,8 @@ public final class Translation {
 		}
 		List<String> found = new ArrayList<>();
 		for (PlayerListEntry entry : handler.getPlayerList()) {
-			java.util.UUID id = entry.getProfile().getId();
-			add(found, entry.getProfile().getName());
+			java.util.UUID id = entry.getProfile().id();
+			add(found, entry.getProfile().name());
 			// Through NameResolver rather than straight off the entry: a server
 			// that leaves the display name empty and decorates the plain one
 			// through a scoreboard team still shows a roleplay name in the tab,

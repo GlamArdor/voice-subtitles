@@ -9,4 +9,9 @@ pluginManagement {
 	}
 }
 
+// 26.x needs Java 25; gradle fetches it into ~/.gradle/jdks for this build only.
+plugins {
+	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
 rootProject.name = 'voice-subtitles'

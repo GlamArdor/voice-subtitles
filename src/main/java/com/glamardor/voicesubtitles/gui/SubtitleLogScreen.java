@@ -5,6 +5,7 @@ import com.glamardor.voicesubtitles.SubtitleFeed;
 import com.glamardor.voicesubtitles.SubtitleLog;
 import com.glamardor.voicesubtitles.VoiceSubtitles;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
@@ -345,19 +346,21 @@ public class SubtitleLogScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		if (exported != null && button == 0
+	public boolean mouseClicked(Click click, boolean doubled) {
+		double mouseX = click.x();
+		double mouseY = click.y();
+		if (exported != null && click.button() == 0
 				&& mouseX >= statusLeft && mouseX <= statusRight
 				&& mouseY >= statusTop && mouseY <= statusTop + 9) {
 			Reveal.inFileManager(exported);
 			return true;
 		}
-		return super.mouseClicked(mouseX, mouseY, button);
+		return super.mouseClicked(click, doubled);
 	}
 
 	@Override
 	public void close() {
-		MinecraftClient.getInstance().setScreen(parent);
+		MinecraftClient.getInstance().guiManager.setScreen(parent);
 	}
 
 	/**
@@ -469,7 +472,10 @@ public class SubtitleLogScreen extends Screen {
 		 * press inside the list is what makes the pulling below possible.
 		 */
 		@Override
-		public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		public boolean mouseClicked(Click click, boolean doubled) {
+			double mouseX = click.x();
+			double mouseY = click.y();
+			int button = click.button();
 			// The bar is claimed before anything else is asked. Handing the press
 			// to the widget first meant it answered "mine" and then moved
 			// nothing, and our own handling never got its turn.
@@ -478,7 +484,7 @@ public class SubtitleLogScreen extends Screen {
 				scrollTo(mouseY);
 				return true;
 			}
-			if (super.mouseClicked(mouseX, mouseY, button)) {
+			if (super.mouseClicked(click, doubled)) {
 				return true;
 			}
 			// Grabbing the text is dragging too, just of the other thing. Taken
@@ -509,9 +515,9 @@ public class SubtitleLogScreen extends Screen {
 		}
 
 		@Override
-		public boolean mouseReleased(double mouseX, double mouseY, int button) {
+		public boolean mouseReleased(Click click) {
 			draggingBar = false;
-			return super.mouseReleased(mouseX, mouseY, button);
+			return super.mouseReleased(click);
 		}
 
 		/**
@@ -519,13 +525,15 @@ public class SubtitleLogScreen extends Screen {
 		 * wheel: a scrollbar six pixels wide is a poor thing to have to aim at.
 		 */
 		@Override
-		public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+		public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+			double mouseY = click.y();
+			int button = click.button();
 			// Ours first, for the same reason as above.
 			if (button == 0 && draggingBar) {
 				scrollTo(mouseY);
 				return true;
 			}
-			if (super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)) {
+			if (super.mouseDragged(click, deltaX, deltaY)) {
 				return true;
 			}
 			if (button != 0) {
@@ -553,8 +561,9 @@ public class SubtitleLogScreen extends Screen {
 			}
 
 			@Override
-			public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
-			                   int mouseX, int mouseY, boolean hovered, float tickDelta) {
+			public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+				int x = getContentX();
+				int y = getContentY();
 				context.drawTextWithShadow(MinecraftClient.getInstance().textRenderer, text, x, y + 1, 0xFFFFFFFF);
 			}
 

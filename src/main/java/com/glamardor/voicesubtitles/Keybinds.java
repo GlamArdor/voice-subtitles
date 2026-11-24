@@ -2,12 +2,11 @@ package com.glamardor.voicesubtitles;
 
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
 import com.glamardor.voicesubtitles.gui.SubtitleLogScreen;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Keys for the three things worth doing mid-conversation without opening a menu.
@@ -18,7 +17,7 @@ import org.lwjgl.glfw.GLFW;
  */
 public final class Keybinds {
 
-	private static final String CATEGORY = "category.voice_subtitles";
+	private static final KeyBinding.Category CATEGORY = KeyBinding.Category.create(VoiceSubtitles.id("keys"));
 
 	private static KeyBinding toggle;
 	private static KeyBinding placement;
@@ -34,8 +33,8 @@ public final class Keybinds {
 	}
 
 	private static KeyBinding bind(String translationKey) {
-		return KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				translationKey, InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, CATEGORY));
+		return KeyMappingHelper.registerKeyMapping(new KeyBinding(
+				translationKey, InputUtil.Type.KEYBOARD, InputUtil.UNKNOWN_KEY.getCode(), CATEGORY));
 	}
 
 	/** Called every client tick; a key may have been pressed more than once. */
@@ -66,8 +65,8 @@ public final class Keybinds {
 		}
 
 		while (log.wasPressed()) {
-			if (client.currentScreen == null) {
-				client.setScreen(new SubtitleLogScreen(null));
+			if (client.guiManager.getCurrentScreen() == null) {
+				client.guiManager.setScreen(new SubtitleLogScreen(null));
 			}
 		}
 	}
@@ -79,7 +78,7 @@ public final class Keybinds {
 
 	private static void say(MinecraftClient client, Text message) {
 		if (client.player != null) {
-			client.player.sendMessage(message, true);
+			client.player.sendOverlayMessage(message);
 		}
 	}
 }

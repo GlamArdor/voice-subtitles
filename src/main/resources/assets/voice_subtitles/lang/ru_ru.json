@@ -11,7 +11,7 @@
 	"voice_subtitles.category.over_head": "Над головой",
 	"voice_subtitles.category.log": "Журнал разговора",
 	"voice_subtitles.category.translation": "Перевод",
-	"category.voice_subtitles": "Voice Subtitles",
+	"key.category.voice_subtitles.keys": "Voice Subtitles",
 	"key.voice_subtitles.toggle": "Включить или выключить субтитры",
 	"key.voice_subtitles.placement": "Переключить, где показывать",
 	"key.voice_subtitles.log": "Открыть журнал разговора",

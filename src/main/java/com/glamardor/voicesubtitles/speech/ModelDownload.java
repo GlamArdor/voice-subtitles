@@ -136,7 +136,7 @@ public final class ModelDownload {
 
 	private static void toast(Text title, Text description) {
 		MinecraftClient client = MinecraftClient.getInstance();
-		client.execute(() -> client.getToastManager().add(
+		client.execute(() -> client.guiManager.getToastManager().add(
 				new SystemToast(SystemToast.Type.PERIODIC_NOTIFICATION, title, description)));
 	}
 }

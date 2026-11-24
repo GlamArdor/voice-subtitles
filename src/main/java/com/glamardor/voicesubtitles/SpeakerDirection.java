@@ -50,7 +50,7 @@ public final class SpeakerDirection {
 			return null;
 		}
 
-		Vec3d relative = target.getPos().subtract(client.player.getPos());
+		Vec3d relative = target.getEntityPos().subtract(client.player.getEntityPos());
 		if (relative.horizontalLengthSquared() < 0.5D) {
 			// Close enough to be standing on top of you; an arrow would just spin.
 			return null;

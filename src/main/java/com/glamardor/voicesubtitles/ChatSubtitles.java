@@ -58,9 +58,9 @@ public final class ChatSubtitles {
 	public static void register() {
 		ClientReceiveMessageEvents.CHAT.register((message, signedMessage, sender, params, timestamp) -> {
 			if (sender != null) {
-				push(sender.getId(), message.getString());
+				push(sender.id(), message.getString());
 			}
-			echoTranslation(message, sender == null ? null : sender.getId());
+			echoTranslation(message, sender == null ? null : sender.id());
 		});
 
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
@@ -100,7 +100,7 @@ public final class ChatSubtitles {
 				return;
 			}
 			MinecraftClient client = MinecraftClient.getInstance();
-			client.execute(() -> client.inGameHud.getChatHud().addMessage(
+			client.execute(() -> client.guiManager.inGameHud.getChatHud().addClientSystemMessage(
 					Text.literal("↳ ").formatted(Formatting.DARK_GRAY)
 							.append(Text.literal(translation).formatted(Formatting.GRAY))));
 		});
@@ -229,8 +229,8 @@ public final class ChatSubtitles {
 	private static List<String> namesOf(UUID speaker) {
 		List<String> names = new ArrayList<>(2);
 		PlayerListEntry entry = NameResolver.entryOf(speaker);
-		if (entry != null && entry.getProfile().getName() != null) {
-			names.add(entry.getProfile().getName());
+		if (entry != null && entry.getProfile().name() != null) {
+			names.add(entry.getProfile().name());
 		}
 		String shown = NameResolver.nameOf(speaker).getString().replaceAll("(?i)\\u00a7[0-9A-FK-ORX]", "").trim();
 		if (!shown.isEmpty()) {

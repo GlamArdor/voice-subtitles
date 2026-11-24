@@ -15,7 +15,7 @@ import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.util.DefaultSkinHelper;
-import net.minecraft.client.util.SkinTextures;
+import net.minecraft.entity.player.SkinTextures;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
@@ -81,10 +81,10 @@ public final class SubtitleHud {
 	public static void renderWhileHidden(DrawContext context, RenderTickCounter tickCounter) {
 		MinecraftClient client = MinecraftClient.getInstance();
 		boolean cinema = CinemaCompat.hidingHud();
-		if (!client.options.hudHidden && !cinema) {
+		if (!client.guiManager.inGameHud.isGuiHidden() && !cinema) {
 			return; // the ordinary HUD layer is drawing it
 		}
-		if (client.options.hudHidden && VoiceSubtitlesConfig.get().hideWithHud && !cinema) {
+		if (client.guiManager.inGameHud.isGuiHidden() && VoiceSubtitlesConfig.get().hideWithHud && !cinema) {
 			return; // asked to go with the rest of the interface
 		}
 		if (!cinema) {
@@ -126,7 +126,7 @@ public final class SubtitleHud {
 		if (client.player == null) {
 			return;
 		}
-		if (client.options.hudHidden && cfg.hideWithHud && !CinemaCompat.hidingHud()) {
+		if (client.guiManager.inGameHud.isGuiHidden() && cfg.hideWithHud && !CinemaCompat.hidingHud()) {
 			return;
 		}
 
@@ -191,7 +191,7 @@ public final class SubtitleHud {
 		// bottom it also gets out of the way of the chat box and of anything the
 		// download notice has taken; neither of those is anywhere near the top.
 		int bottom = screenHeight - edgeOffset - Math.round(loadingHeight / scale);
-		if (client.currentScreen instanceof ChatScreen) {
+		if (client.guiManager.getCurrentScreen() instanceof ChatScreen) {
 			bottom -= CHAT_OFFSET;
 		}
 		int start = edgeOffset + PADDING;

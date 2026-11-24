@@ -142,7 +142,7 @@ public class FallbackConfigScreen extends Screen {
 				v -> v == 0 ? Text.translatable("voice_subtitles.unit.forever")
 						: Text.translatable("voice_subtitles.unit.days", v)));
 		list.addWidget(ButtonWidget.builder(Text.translatable("voice_subtitles.log.open"),
-						button -> MinecraftClient.getInstance().setScreen(new SubtitleLogScreen(this)))
+						button -> MinecraftClient.getInstance().guiManager.setScreen(new SubtitleLogScreen(this)))
 				.dimensions(0, 0, ROW_WIDTH, 20).build());
 
 		list.addHeader(category("over_head"));
@@ -189,7 +189,7 @@ public class FallbackConfigScreen extends Screen {
 	public void close() {
 		VoiceSubtitlesConfig.save();
 		SpeechRecognition.reload();
-		MinecraftClient.getInstance().setScreen(parent);
+		MinecraftClient.getInstance().guiManager.setScreen(parent);
 	}
 
 	// ── widgets ─────────────────────────────────────────────────────────────
@@ -345,8 +345,10 @@ public class FallbackConfigScreen extends Screen {
 			}
 
 			@Override
-			public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
-			                   int mouseX, int mouseY, boolean hovered, float tickDelta) {
+			public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+				int x = getContentX();
+				int y = getContentY();
+				int entryWidth = getContentWidth();
 				widget.setX(x);
 				widget.setY(y);
 				widget.setWidth(entryWidth);
@@ -373,8 +375,10 @@ public class FallbackConfigScreen extends Screen {
 			}
 
 			@Override
-			public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight,
-			                   int mouseX, int mouseY, boolean hovered, float tickDelta) {
+			public void render(DrawContext context, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+				int x = getContentX();
+				int y = getContentY();
+				int entryWidth = getContentWidth();
 				MinecraftClient client = MinecraftClient.getInstance();
 				context.drawCenteredTextWithShadow(client.textRenderer, text,
 						x + entryWidth / 2, y + 8, 0xFFE0C070);

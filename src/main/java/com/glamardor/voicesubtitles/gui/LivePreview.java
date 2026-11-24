@@ -62,7 +62,7 @@ public final class LivePreview {
 		if (owner == null) {
 			return;
 		}
-		if (client.currentScreen == owner) {
+		if (client.guiManager.getCurrentScreen() == owner) {
 			awaySince = 0L;
 			for (Runnable applier : appliers) {
 				try {
@@ -78,7 +78,7 @@ public final class LivePreview {
 			awaySince = now;
 			return;
 		}
-		if (client.currentScreen == null || now - awaySince > AWAY_MILLIS) {
+		if (client.guiManager.getCurrentScreen() == null || now - awaySince > AWAY_MILLIS) {
 			finish();
 		}
 	}

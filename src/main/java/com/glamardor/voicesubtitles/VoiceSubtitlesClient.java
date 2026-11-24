@@ -77,7 +77,7 @@ public class VoiceSubtitlesClient implements ClientModInitializer {
 	 */
 	private void registerMenuProgress() {
 		ScreenEvents.AFTER_INIT.register((client, screen, width, height) ->
-				ScreenEvents.afterRender(screen).register((rendered, context, mouseX, mouseY, delta) -> {
+				ScreenEvents.afterExtract(screen).register((rendered, context, mouseX, mouseY, delta) -> {
 					if (client.world == null && DownloadState.isActive()) {
 						ProgressOverlay.render(context, client.textRenderer,
 								context.getScaledWindowWidth() / 2,

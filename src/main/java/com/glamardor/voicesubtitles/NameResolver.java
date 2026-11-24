@@ -48,7 +48,7 @@ public final class NameResolver {
 			// through a scoreboard team prefix/suffix, which is what the tab shows.
 			// (getScoreboardTeam reaches through the world, which is gone while
 			// disconnecting – hence the guard.)
-			Text plain = Text.literal(entry.getProfile().getName());
+			Text plain = Text.literal(entry.getProfile().name());
 			return client.world == null ? plain : Team.decorateName(entry.getScoreboardTeam(), plain);
 		}
 
@@ -61,18 +61,18 @@ public final class NameResolver {
 	/** @return the plain Mojang username, or {@code null} if it cannot be found. */
 	public static String usernameOf(PlayerListEntry entry, UUID id) {
 		if (entry != null) {
-			return entry.getProfile().getName();
+			return entry.getProfile().name();
 		}
 		MinecraftClient client = MinecraftClient.getInstance();
 		ClientPlayNetworkHandler handler = client.getNetworkHandler();
 		PlayerListEntry known = handler == null ? null : handler.getPlayerListEntry(id);
 		if (known != null) {
-			return known.getProfile().getName();
+			return known.getProfile().name();
 		}
 		if (client.world != null) {
 			PlayerEntity player = client.world.getPlayerByUuid(id);
 			if (player != null) {
-				return player.getGameProfile().getName();
+				return player.getGameProfile().name();
 			}
 		}
 		return null;

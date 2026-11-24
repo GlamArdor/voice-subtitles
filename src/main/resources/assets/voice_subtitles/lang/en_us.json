@@ -11,7 +11,7 @@
 	"voice_subtitles.category.over_head": "Above the head",
 	"voice_subtitles.category.log": "Conversation log",
 	"voice_subtitles.category.translation": "Translation",
-	"category.voice_subtitles": "Voice Subtitles",
+	"key.category.voice_subtitles.keys": "Voice Subtitles",
 	"key.voice_subtitles.toggle": "Turn subtitles on or off",
 	"key.voice_subtitles.placement": "Switch where they are shown",
 	"key.voice_subtitles.log": "Open the conversation log",

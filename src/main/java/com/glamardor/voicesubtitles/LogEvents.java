@@ -141,7 +141,7 @@ public final class LogEvents {
 	 * death message just went past, which would be the same death twice.
 	 */
 	private static void tick(MinecraftClient client) {
-		boolean dead = client.currentScreen instanceof DeathScreen;
+		boolean dead = client.guiManager.getCurrentScreen() instanceof DeathScreen;
 		if (dead && !sawDeathScreen) {
 			if (System.currentTimeMillis() - lastDeathAt > DEATH_ECHO_MS) {
 				SubtitleLog.recordEvent(Text.translatable("voice_subtitles.event.death"));

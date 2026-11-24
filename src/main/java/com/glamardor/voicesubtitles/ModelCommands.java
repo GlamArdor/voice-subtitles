@@ -8,7 +8,7 @@ import com.glamardor.voicesubtitles.speech.SpeechModels;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.text.Text;
@@ -35,21 +35,21 @@ public final class ModelCommands {
 	}
 
 	public static LiteralArgumentBuilder<FabricClientCommandSource> build() {
-		return ClientCommandManager.literal("model")
+		return ClientCommands.literal("model")
 				.executes(ctx -> status(ctx.getSource()))
-				.then(ClientCommandManager.literal("list")
+				.then(ClientCommands.literal("list")
 						.executes(ctx -> list(ctx.getSource())))
-				.then(ClientCommandManager.literal("status")
+				.then(ClientCommands.literal("status")
 						.executes(ctx -> status(ctx.getSource())))
-				.then(ClientCommandManager.literal("download")
-						.then(ClientCommandManager.argument("id", StringArgumentType.word())
+				.then(ClientCommands.literal("download")
+						.then(ClientCommands.argument("id", StringArgumentType.word())
 								.suggests(MODEL_SUGGESTIONS)
 								.executes(ctx -> download(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
-				.then(ClientCommandManager.literal("use")
-						.then(ClientCommandManager.argument("id", StringArgumentType.word())
+				.then(ClientCommands.literal("use")
+						.then(ClientCommands.argument("id", StringArgumentType.word())
 								.suggests(MODEL_SUGGESTIONS)
 								.executes(ctx -> use(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
-				.then(ClientCommandManager.literal("repair")
+				.then(ClientCommands.literal("repair")
 						.executes(ctx -> repair(ctx.getSource())));
 	}
 
@@ -183,7 +183,7 @@ public final class ModelCommands {
 		MinecraftClient client = MinecraftClient.getInstance();
 		client.execute(() -> {
 			if (client.player != null) {
-				client.player.sendMessage(message, false);
+				client.player.sendMessage(message);
 			}
 		});
 	}

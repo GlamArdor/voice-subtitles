@@ -8,7 +8,7 @@ import com.glamardor.voicesubtitles.translate.Languages;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
@@ -33,11 +33,11 @@ public final class SubtitleCommands {
 		ClientPlayNetworkHandler handler = MinecraftClient.getInstance().getNetworkHandler();
 		if (handler != null) {
 			for (PlayerListEntry entry : handler.getPlayerList()) {
-				String name = entry.getProfile().getName();
+				String name = entry.getProfile().name();
 				if (name != null && name.toLowerCase().startsWith(builder.getRemainingLowerCase())) {
 					// The roleplay name as the tooltip, since that is what the
 					// subtitle will actually show for this player.
-					builder.suggest(name, NameResolver.nameOf(entry.getProfile().getId()));
+					builder.suggest(name, NameResolver.nameOf(entry.getProfile().id()));
 				}
 			}
 		}
@@ -93,27 +93,27 @@ public final class SubtitleCommands {
 
 	public static void register() {
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, access) ->
-				dispatcher.register(ClientCommandManager.literal("vsub")
+				dispatcher.register(ClientCommands.literal("vsub")
 						.then(ModelCommands.build())
-						.then(ClientCommandManager.literal("log")
+						.then(ClientCommands.literal("log")
 								.executes(ctx -> openLog()))
-						.then(ClientCommandManager.literal("preview")
+						.then(ClientCommands.literal("preview")
 								.executes(ctx -> preview(6))
-								.then(ClientCommandManager.argument("seconds", IntegerArgumentType.integer(1, 60))
+								.then(ClientCommands.argument("seconds", IntegerArgumentType.integer(1, 60))
 										.executes(ctx -> preview(IntegerArgumentType.getInteger(ctx, "seconds")))))
-						.then(ClientCommandManager.literal("lang")
+						.then(ClientCommands.literal("lang")
 								.executes(ctx -> listLanguages(ctx.getSource()))
-								.then(ClientCommandManager.argument("player", StringArgumentType.word())
+								.then(ClientCommands.argument("player", StringArgumentType.word())
 										.suggests(PLAYER_SUGGESTIONS)
-										.then(ClientCommandManager.argument("language", StringArgumentType.word())
+										.then(ClientCommands.argument("language", StringArgumentType.word())
 												.suggests(LANGUAGE_SUGGESTIONS)
 												.executes(ctx -> setLanguage(ctx.getSource(),
 														StringArgumentType.getString(ctx, "player"),
 														StringArgumentType.getString(ctx, "language"))))))
-						.then(ClientCommandManager.literal("color")
-								.then(ClientCommandManager.argument("player", StringArgumentType.word())
+						.then(ClientCommands.literal("color")
+								.then(ClientCommands.argument("player", StringArgumentType.word())
 										.suggests(PLAYER_SUGGESTIONS)
-										.then(ClientCommandManager.argument("hex", StringArgumentType.word())
+										.then(ClientCommands.argument("hex", StringArgumentType.word())
 												.suggests(COLOR_SUGGESTIONS)
 												.executes(ctx -> setColor(ctx.getSource(),
 														StringArgumentType.getString(ctx, "player"),
@@ -144,7 +144,7 @@ public final class SubtitleCommands {
 	 */
 	private static int openLog() {
 		MinecraftClient client = MinecraftClient.getInstance();
-		client.send(() -> client.setScreen(new SubtitleLogScreen(null)));
+		client.send(() -> client.guiManager.setScreen(new SubtitleLogScreen(null)));
 		return 1;
 	}
 
@@ -162,7 +162,7 @@ public final class SubtitleCommands {
 					.formatted(Formatting.RED));
 			return 0;
 		}
-		UUID id = entry.getProfile().getId();
+		UUID id = entry.getProfile().id();
 
 		if ("reset".equalsIgnoreCase(language)) {
 			Languages.set(id, null);
@@ -225,7 +225,7 @@ public final class SubtitleCommands {
 					.formatted(Formatting.RED));
 			return 0;
 		}
-		UUID id = entry.getProfile().getId();
+		UUID id = entry.getProfile().id();
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
 
 		if ("reset".equalsIgnoreCase(hex)) {

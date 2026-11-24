@@ -1,6 +1,7 @@
 package com.glamardor.voicesubtitles.gui;
 
 import com.glamardor.voicesubtitles.VoiceSubtitles;
+import net.minecraft.client.util.SdlUtil;
 import net.minecraft.util.Util;
 
 import java.nio.file.Path;
@@ -41,6 +42,6 @@ final class Reveal {
 		}
 		// Everywhere else, and whenever the above did not work: the folder, which
 		// every desktop can open and which is better than nothing at all.
-		Util.getOperatingSystem().open(absolute.getParent().toUri());
+		SdlUtil.openUri(absolute.getParent().toUri());
 	}
 }

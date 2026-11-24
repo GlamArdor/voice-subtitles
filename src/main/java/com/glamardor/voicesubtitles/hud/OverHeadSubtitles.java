@@ -5,12 +5,12 @@ import com.glamardor.voicesubtitles.NameResolver;
 import com.glamardor.voicesubtitles.SpeakerColors;
 import com.glamardor.voicesubtitles.SubtitleFeed;
 import com.glamardor.voicesubtitles.config.VoiceSubtitlesConfig;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
+import net.minecraft.client.render.state.CameraRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.MutableText;
@@ -18,7 +18,6 @@ import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.Vec3d;
-import org.joml.Matrix4f;
 
 import java.util.List;
 
@@ -43,39 +42,33 @@ public final class OverHeadSubtitles {
 	}
 
 	public static void init() {
-		WorldRenderEvents.LAST.register(OverHeadSubtitles::render);
+		// Since 1.21.9 the world is not drawn straight into buffers: text is
+		// submitted while the frame is collected and drawn with the rest of it.
+		LevelRenderEvents.COLLECT_SUBMITS.register(OverHeadSubtitles::render);
 	}
 
-	private static void render(WorldRenderContext context) {
+	private static void render(LevelRenderContext context) {
 		VoiceSubtitlesConfig cfg = VoiceSubtitlesConfig.get();
 		if (!cfg.enabled || (!cfg.voicePlacement.overHead() && !cfg.chatPlacement.overHead())) {
 			return;
 		}
 
 		MinecraftClient client = MinecraftClient.getInstance();
-		if (client.world == null || client.player == null || (client.options.hudHidden && cfg.hideWithHud)) {
+		if (client.world == null || client.player == null || (client.guiManager.inGameHud.isGuiHidden() && cfg.hideWithHud)) {
 			return;
 		}
 
-		MatrixStack matrices = context.matrixStack();
-		if (matrices == null) {
+		MatrixStack matrices = context.poseStack();
+		OrderedRenderCommandQueue queue = context.submitNodeCollector();
+		CameraRenderState camera = context.levelState().cameraRenderState;
+		if (matrices == null || queue == null || camera == null) {
 			return;
 		}
-		VertexConsumerProvider consumers = context.consumers();
-		if (consumers == null) {
-			consumers = client.getBufferBuilders().getEntityVertexConsumers();
-		}
-		if (consumers == null) {
-			return;
-		}
-
-		Camera camera = context.camera();
-		Vec3d cameraPos = camera.getPos();
-		float tickDelta = context.tickCounter().getTickProgress(false);
+		Vec3d cameraPos = camera.pos;
+		float tickDelta = camera.tickProgress;
 		boolean firstPerson = client.options.getPerspective().isFirstPerson();
 		TextRenderer textRenderer = client.textRenderer;
 		long now = System.currentTimeMillis();
-		int drawn = 0;
 
 		for (PlayerEntity player : client.world.getPlayers()) {
 			boolean self = player == client.player;
@@ -123,29 +116,23 @@ public final class OverHeadSubtitles {
 			Vec3d pos = player.getLerpedPos(tickDelta);
 			double y = pos.y + player.getHeight() + cfg.overHeadHeight / 100.0D;
 
-			draw(matrices, consumers, camera, textRenderer, rows,
+			draw(matrices, queue, camera, textRenderer, rows,
 					pos.x - cameraPos.x, y - cameraPos.y, pos.z - cameraPos.z,
 					ColorHelper.withAlpha(alpha, color), alpha, cfg.overHeadThroughWalls,
 					cfg.overHeadScalePercent / 100F, cfg.overHeadBackground / 100F);
-			drawn++;
-		}
-
-		if (drawn > 0 && consumers instanceof VertexConsumerProvider.Immediate immediate) {
-			immediate.draw();
 		}
 	}
 
 	/** Billboards the caption at the given camera-relative position, rows stacked upwards. */
-	private static void draw(MatrixStack matrices, VertexConsumerProvider consumers, Camera camera,
+	private static void draw(MatrixStack matrices, OrderedRenderCommandQueue queue, CameraRenderState camera,
 	                         TextRenderer textRenderer, List<OrderedText> rows,
 	                         double x, double y, double z, int color, int alpha, boolean throughWalls,
 	                         float scale, float backgroundOpacity) {
 		matrices.push();
 		matrices.translate(x, y, z);
-		matrices.multiply(camera.getRotation());
+		matrices.multiply(camera.orientation);
 		matrices.scale(TEXT_SCALE * scale, -TEXT_SCALE * scale, TEXT_SCALE * scale);
 
-		Matrix4f matrix = matrices.peek().getPositionMatrix();
 		TextRenderer.TextLayerType layer = throughWalls
 				? TextRenderer.TextLayerType.SEE_THROUGH
 				: TextRenderer.TextLayerType.NORMAL;
@@ -158,8 +145,8 @@ public final class OverHeadSubtitles {
 		for (int i = 0; i < rows.size(); i++) {
 			OrderedText row = rows.get(i);
 			float rowX = -textRenderer.getWidth(row) / 2.0F;
-			textRenderer.draw(row, rowX, top + i * LINE_HEIGHT, color, false,
-					matrix, consumers, layer, background, FULL_BRIGHT);
+			queue.submitText(matrices, rowX, top + i * LINE_HEIGHT, row, false,
+					layer, FULL_BRIGHT, color, background, 0);
 		}
 
 		matrices.pop();

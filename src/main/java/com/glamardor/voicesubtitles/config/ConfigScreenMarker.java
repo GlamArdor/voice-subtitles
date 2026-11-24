@@ -30,6 +30,6 @@ public final class ConfigScreenMarker {
 	/** @return whether this screen is our settings screen and is currently open. */
 	public static boolean isOurs(Screen screen) {
 		Screen marked = ours.get();
-		return marked != null && marked == screen && MinecraftClient.getInstance().currentScreen == screen;
+		return marked != null && marked == screen && MinecraftClient.getInstance().guiManager.getCurrentScreen() == screen;
 	}
 }
